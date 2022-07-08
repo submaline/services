@@ -18,10 +18,11 @@ func LogGrpcFuncFinish(l *zap.Logger, serviceName zap.Field, funcName zap.Field)
 	)
 }
 
-func LogError(l *zap.Logger, serviceName zap.Field, funcName zap.Field, err error) {
+func LogError(l *zap.Logger, serviceName zap.Field, funcName zap.Field, message string, err error) {
 	l.Info("error",
 		serviceName,
 		funcName,
+		zap.String("message", message),
 		zap.Errors("detail", []error{err}),
 	)
 }
