@@ -26,24 +26,24 @@ var (
 )
 
 type SupervisorServer struct {
-	db     *database.DBClient // for mariadb
-	auth   *auth.Client       // for firebase auth
-	id     *snowflake.Node    // for id generate
-	rb     *amqp.Connection   // for rabbitmq
-	logger *zap.Logger        // for logging
+	DB     *database.DBClient // for mariadb
+	Auth   *auth.Client       // for firebase auth
+	Id     *snowflake.Node    // for id generate
+	Rb     *amqp.Connection   // for rabbitmq
+	Logger *zap.Logger        // for logging
 }
 
 func (s *SupervisorServer) CreateAccount(_ context.Context,
 	req *connect.Request[supervisorv1.CreateAccountRequest]) (
 	*connect.Response[supervisorv1.CreateAccountResponse], error) {
 	funcName := zap.String("func", "CreateAccount")
-	logging.LogGrpcFuncCall(s.logger, serviceName, funcName)
+	logging.LogGrpcFuncCall(s.Logger, serviceName, funcName)
 
 	// firebaseのトークンにadminクレームが入っていれば、その情報がインターセプターで挿入されてるはず
 	if !util.ParseBool(req.Header().Get("X-Submaline-Admin")) {
 		err := ErrAdminOnly()
 		logging.LogError(
-			s.logger,
+			s.Logger,
 			serviceName,
 			funcName,
 			"",
@@ -53,11 +53,11 @@ func (s *SupervisorServer) CreateAccount(_ context.Context,
 	}
 
 	// firebaseにユーザーが存在するかを確認
-	user, err := s.auth.GetUser(context.Background(), req.Msg.Account.UserId)
+	user, err := s.Auth.GetUser(context.Background(), req.Msg.Account.UserId)
 	if err != nil {
 		if auth.IsUserNotFound(err) {
 			logging.LogError(
-				s.logger,
+				s.Logger,
 				serviceName,
 				funcName,
 				"ユーザーが存在しません",
@@ -67,7 +67,7 @@ func (s *SupervisorServer) CreateAccount(_ context.Context,
 		}
 
 		logging.LogError(
-			s.logger,
+			s.Logger,
 			serviceName,
 			funcName,
 			"firebaseで不明なエラー",
@@ -77,13 +77,13 @@ func (s *SupervisorServer) CreateAccount(_ context.Context,
 	}
 
 	// databaseに作成
-	account, err := s.db.CreateAccount(user.UID, user.Email)
+	account, err := s.DB.CreateAccount(user.UID, user.Email)
 	if err != nil {
 		// todo : already exists
 		// Error 1062: Duplicate entry
 
 		logging.LogError(
-			s.logger,
+			s.Logger,
 			serviceName,
 			funcName,
 			"データベースでエラー",
@@ -94,7 +94,7 @@ func (s *SupervisorServer) CreateAccount(_ context.Context,
 
 	res := connect.NewResponse(&supervisorv1.CreateAccountResponse{Account: account})
 
-	logging.LogGrpcFuncFinish(s.logger, serviceName, funcName)
+	logging.LogGrpcFuncFinish(s.Logger, serviceName, funcName)
 
 	return res, nil
 }
@@ -104,14 +104,14 @@ func (s *SupervisorServer) CreateProfile(_ context.Context,
 	*connect.Response[supervisorv1.CreateProfileResponse], error) {
 	funcName := zap.String("func", "CreateProfile")
 
-	logging.LogGrpcFuncCall(s.logger, serviceName, funcName)
+	logging.LogGrpcFuncCall(s.Logger, serviceName, funcName)
 
 	// 権限確認
 	if !util.ParseBool(req.Header().Get("X-Peg-Admin")) {
 		err := ErrAdminOnly
 
 		logging.LogError(
-			s.logger,
+			s.Logger,
 			serviceName,
 			funcName,
 			"",
@@ -121,12 +121,12 @@ func (s *SupervisorServer) CreateProfile(_ context.Context,
 	}
 
 	// firebaseにユーザーが存在するか
-	user, err := s.auth.GetUser(context.Background(), req.Msg.Profile.UserId)
+	user, err := s.Auth.GetUser(context.Background(), req.Msg.Profile.UserId)
 	if err != nil {
 		if auth.IsUserNotFound(err) {
 
 			logging.LogError(
-				s.logger,
+				s.Logger,
 				serviceName,
 				funcName,
 				"ユーザー存在しない",
@@ -136,7 +136,7 @@ func (s *SupervisorServer) CreateProfile(_ context.Context,
 		}
 
 		logging.LogError(
-			s.logger,
+			s.Logger,
 			serviceName,
 			funcName,
 			"",
@@ -146,12 +146,12 @@ func (s *SupervisorServer) CreateProfile(_ context.Context,
 	}
 
 	// databaseに作成
-	profile, err := s.db.CreateProfile(user.UID, defaultDisplayName, defaultIconPath)
+	profile, err := s.DB.CreateProfile(user.UID, defaultDisplayName, defaultIconPath)
 	if err != nil {
 		// todo : already exists
 		// Error 1062: Duplicate entry
 		logging.LogError(
-			s.logger,
+			s.Logger,
 			serviceName,
 			funcName,
 			"",
@@ -162,7 +162,7 @@ func (s *SupervisorServer) CreateProfile(_ context.Context,
 
 	res := connect.NewResponse(&supervisorv1.CreateProfileResponse{Profile: profile})
 
-	logging.LogGrpcFuncFinish(s.logger, serviceName, funcName)
+	logging.LogGrpcFuncFinish(s.Logger, serviceName, funcName)
 
 	return res, nil
 }
@@ -171,13 +171,13 @@ func (s *SupervisorServer) RecordOperation(_ context.Context,
 	req *connect.Request[supervisorv1.RecordOperationRequest]) (
 	*connect.Response[supervisorv1.RecordOperationResponse], error) {
 	funcName := zap.String("func", "RecordOperation")
-	logging.LogGrpcFuncCall(s.logger, serviceName, funcName)
+	logging.LogGrpcFuncCall(s.Logger, serviceName, funcName)
 
 	// 権限確認
 	if !util.ParseBool(req.Header().Get("X-Peg-Admin")) {
 		err := ErrAdminOnly
 		logging.LogError(
-			s.logger,
+			s.Logger,
 			serviceName,
 			funcName,
 			"",
@@ -185,10 +185,10 @@ func (s *SupervisorServer) RecordOperation(_ context.Context,
 		return nil, connect.NewError(connect.CodePermissionDenied, fmt.Errorf("admin only"))
 	}
 
-	ch, err := s.rb.Channel()
+	ch, err := s.Rb.Channel()
 	if err != nil {
 		logging.LogError(
-			s.logger,
+			s.Logger,
 			serviceName,
 			funcName,
 			"",
@@ -199,14 +199,14 @@ func (s *SupervisorServer) RecordOperation(_ context.Context,
 
 	// supervisorは、お願いされたものを記録するだけ。
 	for _, op := range req.Msg.Operations {
-		opId := s.id.Generate().Int64()
+		opId := s.Id.Generate().Int64()
 		// op本体の記録
 
 		// 時間強制書き換え
-		_, err := s.db.CreateOperation(opId, op.Type, op.Source, op.Param1, op.Param2, op.Param3, time.Now())
+		_, err := s.DB.CreateOperation(opId, op.Type, op.Source, op.Param1, op.Param2, op.Param3, time.Now())
 		if err != nil {
 			logging.LogError(
-				s.logger,
+				s.Logger,
 				serviceName,
 				funcName,
 				"",
@@ -219,10 +219,10 @@ func (s *SupervisorServer) RecordOperation(_ context.Context,
 		// 先にdestをチェックするか、、、
 
 		// 宛先の記録
-		err = s.db.CreateOperationDestination(opId, op.Destination)
+		err = s.DB.CreateOperationDestination(opId, op.Destination)
 		if err != nil {
 			logging.LogError(
-				s.logger,
+				s.Logger,
 				serviceName,
 				funcName,
 				"",
@@ -241,7 +241,7 @@ func (s *SupervisorServer) RecordOperation(_ context.Context,
 			)
 			if err != nil {
 				logging.LogError(
-					s.logger,
+					s.Logger,
 					serviceName,
 					funcName,
 					"",
@@ -260,7 +260,7 @@ func (s *SupervisorServer) RecordOperation(_ context.Context,
 				})
 			if err != nil {
 				logging.LogError(
-					s.logger,
+					s.Logger,
 					serviceName,
 					funcName,
 					"",
