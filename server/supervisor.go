@@ -12,7 +12,6 @@ import (
 	"github.com/submaline/services/logging"
 	"github.com/submaline/services/util"
 	"go.uber.org/zap"
-	"strconv"
 	"time"
 )
 
@@ -22,7 +21,7 @@ const (
 )
 
 var (
-	serviceName = zap.String("service", "Supervisor")
+	SupervisorServiceName = zap.String("service", "Supervisor")
 )
 
 type SupervisorServer struct {
@@ -37,14 +36,14 @@ func (s *SupervisorServer) CreateAccount(_ context.Context,
 	req *connect.Request[supervisorv1.CreateAccountRequest]) (
 	*connect.Response[supervisorv1.CreateAccountResponse], error) {
 	funcName := zap.String("func", "CreateAccount")
-	logging.LogGrpcFuncCall(s.Logger, serviceName, funcName)
+	logging.LogGrpcFuncCall(s.Logger, SupervisorServiceName, funcName)
 
 	// firebaseのトークンにadminクレームが入っていれば、その情報がインターセプターで挿入されてるはず
 	if !util.ParseBool(req.Header().Get("X-Submaline-Admin")) {
 		err := ErrAdminOnly()
 		logging.LogError(
 			s.Logger,
-			serviceName,
+			SupervisorServiceName,
 			funcName,
 			"",
 			err)
@@ -58,7 +57,7 @@ func (s *SupervisorServer) CreateAccount(_ context.Context,
 		if auth.IsUserNotFound(err) {
 			logging.LogError(
 				s.Logger,
-				serviceName,
+				SupervisorServiceName,
 				funcName,
 				"ユーザーが存在しません",
 				err)
@@ -68,7 +67,7 @@ func (s *SupervisorServer) CreateAccount(_ context.Context,
 
 		logging.LogError(
 			s.Logger,
-			serviceName,
+			SupervisorServiceName,
 			funcName,
 			"firebaseで不明なエラー",
 			err)
@@ -84,7 +83,7 @@ func (s *SupervisorServer) CreateAccount(_ context.Context,
 
 		logging.LogError(
 			s.Logger,
-			serviceName,
+			SupervisorServiceName,
 			funcName,
 			"データベースでエラー",
 			err)
@@ -94,7 +93,7 @@ func (s *SupervisorServer) CreateAccount(_ context.Context,
 
 	res := connect.NewResponse(&supervisorv1.CreateAccountResponse{Account: account})
 
-	logging.LogGrpcFuncFinish(s.Logger, serviceName, funcName)
+	logging.LogGrpcFuncFinish(s.Logger, SupervisorServiceName, funcName)
 
 	return res, nil
 }
@@ -104,7 +103,7 @@ func (s *SupervisorServer) CreateProfile(_ context.Context,
 	*connect.Response[supervisorv1.CreateProfileResponse], error) {
 	funcName := zap.String("func", "CreateProfile")
 
-	logging.LogGrpcFuncCall(s.Logger, serviceName, funcName)
+	logging.LogGrpcFuncCall(s.Logger, SupervisorServiceName, funcName)
 
 	// 権限確認
 	if !util.ParseBool(req.Header().Get("X-Peg-Admin")) {
@@ -112,7 +111,7 @@ func (s *SupervisorServer) CreateProfile(_ context.Context,
 
 		logging.LogError(
 			s.Logger,
-			serviceName,
+			SupervisorServiceName,
 			funcName,
 			"",
 			err)
@@ -127,7 +126,7 @@ func (s *SupervisorServer) CreateProfile(_ context.Context,
 
 			logging.LogError(
 				s.Logger,
-				serviceName,
+				SupervisorServiceName,
 				funcName,
 				"ユーザー存在しない",
 				err)
@@ -137,7 +136,7 @@ func (s *SupervisorServer) CreateProfile(_ context.Context,
 
 		logging.LogError(
 			s.Logger,
-			serviceName,
+			SupervisorServiceName,
 			funcName,
 			"",
 			err)
@@ -152,7 +151,7 @@ func (s *SupervisorServer) CreateProfile(_ context.Context,
 		// Error 1062: Duplicate entry
 		logging.LogError(
 			s.Logger,
-			serviceName,
+			SupervisorServiceName,
 			funcName,
 			"",
 			err)
@@ -162,7 +161,7 @@ func (s *SupervisorServer) CreateProfile(_ context.Context,
 
 	res := connect.NewResponse(&supervisorv1.CreateProfileResponse{Profile: profile})
 
-	logging.LogGrpcFuncFinish(s.Logger, serviceName, funcName)
+	logging.LogGrpcFuncFinish(s.Logger, SupervisorServiceName, funcName)
 
 	return res, nil
 }
@@ -171,14 +170,14 @@ func (s *SupervisorServer) RecordOperation(_ context.Context,
 	req *connect.Request[supervisorv1.RecordOperationRequest]) (
 	*connect.Response[supervisorv1.RecordOperationResponse], error) {
 	funcName := zap.String("func", "RecordOperation")
-	logging.LogGrpcFuncCall(s.Logger, serviceName, funcName)
+	logging.LogGrpcFuncCall(s.Logger, SupervisorServiceName, funcName)
 
 	// 権限確認
 	if !util.ParseBool(req.Header().Get("X-Peg-Admin")) {
 		err := ErrAdminOnly
 		logging.LogError(
 			s.Logger,
-			serviceName,
+			SupervisorServiceName,
 			funcName,
 			"",
 			err)
@@ -189,7 +188,7 @@ func (s *SupervisorServer) RecordOperation(_ context.Context,
 	if err != nil {
 		logging.LogError(
 			s.Logger,
-			serviceName,
+			SupervisorServiceName,
 			funcName,
 			"",
 			err)
@@ -207,7 +206,7 @@ func (s *SupervisorServer) RecordOperation(_ context.Context,
 		if err != nil {
 			logging.LogError(
 				s.Logger,
-				serviceName,
+				SupervisorServiceName,
 				funcName,
 				"",
 				err)
@@ -223,7 +222,7 @@ func (s *SupervisorServer) RecordOperation(_ context.Context,
 		if err != nil {
 			logging.LogError(
 				s.Logger,
-				serviceName,
+				SupervisorServiceName,
 				funcName,
 				"",
 				err)
@@ -242,7 +241,7 @@ func (s *SupervisorServer) RecordOperation(_ context.Context,
 			if err != nil {
 				logging.LogError(
 					s.Logger,
-					serviceName,
+					SupervisorServiceName,
 					funcName,
 					"",
 					err)
@@ -256,17 +255,23 @@ func (s *SupervisorServer) RecordOperation(_ context.Context,
 				false,
 				amqp.Publishing{
 					ContentType: "text/plain",
-					Body:        []byte(strconv.FormatInt(opId, 10)),
+					Body:        []byte(fmt.Sprintf("%v", opId)),
 				})
 			if err != nil {
 				logging.LogError(
 					s.Logger,
-					serviceName,
+					SupervisorServiceName,
 					funcName,
 					"",
 					err)
 				return nil, connect.NewError(connect.CodeUnknown, err)
 			}
+
+			logging.LogInfo(
+				s.Logger,
+				SupervisorServiceName,
+				funcName,
+				fmt.Sprintf("MQに%v宛のop: %vの到着をお知らせしました", dest, opId))
 
 		}
 	}
