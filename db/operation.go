@@ -54,6 +54,6 @@ func (db *DBClient) GetOperationWithOperationId(operationId int64) (*typesv1.Ope
 		Param1:      param1,
 		Param2:      param2,
 		Param3:      param3,
-		CratedAt:    timestamppb.New(createdAt),
+		CreatedAt:   timestamppb.New(createdAt),
 	}, nil
 }

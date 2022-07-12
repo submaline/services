@@ -56,7 +56,7 @@ func (s *AuthServer) LoginWithEmail(_ context.Context,
 			Param1:      "",
 			Param2:      "",
 			Param3:      "",
-			CratedAt:    timestamppb.Now(),
+			CreatedAt:   timestamppb.Now(),
 		},
 	}})
 

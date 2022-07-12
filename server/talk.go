@@ -120,7 +120,7 @@ func (s *TalkServer) SendMessage(_ context.Context,
 			Param1:      msg.Id,
 			Param2:      msg.From,
 			Param3:      msg.To,
-			CratedAt:    timestamppb.Now(),
+			CreatedAt:   timestamppb.Now(),
 		},
 		{
 			Id:          0,
@@ -130,7 +130,7 @@ func (s *TalkServer) SendMessage(_ context.Context,
 			Param1:      msg.Id,
 			Param2:      msg.From,
 			Param3:      msg.To,
-			CratedAt:    timestamppb.Now(),
+			CreatedAt:   timestamppb.Now(),
 		},
 	}})
 
