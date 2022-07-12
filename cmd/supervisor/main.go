@@ -9,7 +9,7 @@ import (
 	"github.com/bwmarrin/snowflake"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/submaline/services/database"
-	"github.com/submaline/services/gen/protocol/supervisor/v1/supervisorv1connect"
+	"github.com/submaline/services/gen/supervisor/v1/supervisorv1connect"
 	"github.com/submaline/services/interceptor"
 	"github.com/submaline/services/server"
 	"go.uber.org/zap"

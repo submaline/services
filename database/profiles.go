@@ -1,8 +1,8 @@
 package database
 
 import (
-	typesv1 "github.com/submaline/services/gen/protocol/types/v1"
-	userv1 "github.com/submaline/services/gen/protocol/user/v1"
+	typesv1 "github.com/submaline/services/gen/types/v1"
+	userv1 "github.com/submaline/services/gen/user/v1"
 	"github.com/submaline/services/util"
 	"strings"
 )
