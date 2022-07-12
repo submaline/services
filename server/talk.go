@@ -7,7 +7,7 @@ import (
 	"github.com/bufbuild/connect-go"
 	"github.com/bwmarrin/snowflake"
 	"github.com/rs/xid"
-	"github.com/submaline/services/database"
+	"github.com/submaline/services/db"
 	supervisorv1 "github.com/submaline/services/gen/supervisor/v1"
 	"github.com/submaline/services/gen/supervisor/v1/supervisorv1connect"
 	talkv1 "github.com/submaline/services/gen/talk/v1"
@@ -17,6 +17,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"log"
+	"os"
 	"strings"
 )
 
@@ -25,9 +26,9 @@ var (
 )
 
 type TalkServer struct {
-	DB   *database.DBClient // for mariadb
-	Auth *auth.Client       // for firebase auth
-	Id   *snowflake.Node    // for id generate
+	DB   *db.DBClient    // for mariadb
+	Auth *auth.Client    // for firebase auth
+	Id   *snowflake.Node // for id generate
 	//Rb     *amqp.Connection   // for rabbitmq
 	Logger *zap.Logger // for logging
 
@@ -104,7 +105,7 @@ func (s *TalkServer) SendMessage(_ context.Context,
 	}
 
 	// sv用のトークン生成
-	adminToken, err := util.GenerateAdminToken()
+	adminToken, err := util.GenerateToken(os.Getenv("SUBMALINE_ADMIN_FB_EMAIL"), os.Getenv("SUBMALINE_ADMIN_FB_PASSWORD"))
 	if err != nil {
 		logging.LogError(s.Logger, TalkServiceName, funcName, "sv用のトークンの生成に失敗しました", err)
 		return nil, connect.NewError(connect.CodeUnknown, err)
@@ -134,7 +135,7 @@ func (s *TalkServer) SendMessage(_ context.Context,
 	}})
 
 	// トークンをくっつけてあげる
-	recordReq.Header().Set("Authorization", fmt.Sprintf("Bearer %s", adminToken))
+	recordReq.Header().Set("Authorization", fmt.Sprintf("Bearer %s", adminToken.IdToken))
 	// リクエスト送信
 	go func() {
 		_, err = (*s.SvClient).RecordOperation(

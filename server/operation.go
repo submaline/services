@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/bufbuild/connect-go"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"github.com/submaline/services/database"
+	"github.com/submaline/services/db"
 	operationv1 "github.com/submaline/services/gen/operation/v1"
 	supervisorv1 "github.com/submaline/services/gen/supervisor/v1"
 	"github.com/submaline/services/gen/supervisor/v1/supervisorv1connect"
@@ -14,6 +14,7 @@ import (
 	"github.com/submaline/services/logging"
 	"github.com/submaline/services/util"
 	"go.uber.org/zap"
+	"os"
 	"strconv"
 )
 
@@ -22,8 +23,8 @@ var (
 )
 
 type OperationServer struct {
-	DB   *database.DBClient // for mariadb
-	Auth *auth.Client       // for firebase auth
+	DB   *db.DBClient // for mariadb
+	Auth *auth.Client // for firebase auth
 	//Id     *snowflake.Node    // for id generate
 	Rb     *amqp.Connection // for rabbitmq
 	Logger *zap.Logger      // for logging
@@ -39,7 +40,7 @@ func (s *OperationServer) FetchOperations(_ context.Context,
 	requesterUserId := req.Header().Get("X-Submaline-UserId")
 
 	// sv用のトークン生成
-	adminToken, err := util.GenerateAdminToken()
+	adminToken, err := util.GenerateToken(os.Getenv("SUBMALINE_ADMIN_FB_EMAIL"), os.Getenv("SUBMALINE_ADMIN_FB_PASSWORD"))
 	if err != nil {
 		logging.LogError(s.Logger, OperationServiceName, funcName, "sv用のトークンの生成に失敗しました", err)
 		return connect.NewError(connect.CodeUnknown, err)
@@ -59,7 +60,7 @@ func (s *OperationServer) FetchOperations(_ context.Context,
 			},
 		},
 	})
-	recordReq.Header().Set("Authorization", fmt.Sprintf("Bearer %s", adminToken))
+	recordReq.Header().Set("Authorization", fmt.Sprintf("Bearer %s", adminToken.IdToken))
 
 	_, err = (*s.SvClient).RecordOperation(context.Background(), recordReq)
 	if err != nil {

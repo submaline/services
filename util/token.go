@@ -48,36 +48,36 @@ type GenTokenResponse struct {
 	ExpiresIn    string `json:"expiresIn"`
 }
 
-func GenerateAdminToken() (string, error) {
+func GenerateToken(email string, password string) (*GenTokenResponse, error) {
 	url := fmt.Sprintf("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=%s",
 		os.Getenv("FIREBASE_WEB_API_KEY"))
 	bin := GenTokenRequest{
-		Email:             os.Getenv("SUBMALINE_ADMIN_FB_EMAIL"),
-		Password:          os.Getenv("SUBMALINE_ADMIN_FB_PASSWORD"),
+		Email:             email,
+		Password:          password,
 		ReturnSecureToken: true,
 	}
 	dataBin, err := json.Marshal(bin)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	res, err := http.Post(url, "application/json", bytes.NewBuffer(dataBin))
 	defer res.Body.Close()
 
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	body, err := io.ReadAll(res.Body)
 
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	var result GenTokenResponse
 	err = json.Unmarshal(body, &result)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return result.IdToken, err
+	return &result, err
 }

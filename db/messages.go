@@ -1,4 +1,4 @@
-package database
+package db
 
 import (
 	typesv1 "github.com/submaline/services/gen/types/v1"

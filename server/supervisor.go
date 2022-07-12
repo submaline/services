@@ -7,7 +7,7 @@ import (
 	"github.com/bufbuild/connect-go"
 	"github.com/bwmarrin/snowflake"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"github.com/submaline/services/database"
+	"github.com/submaline/services/db"
 	supervisorv1 "github.com/submaline/services/gen/supervisor/v1"
 	"github.com/submaline/services/logging"
 	"github.com/submaline/services/util"
@@ -25,11 +25,11 @@ var (
 )
 
 type SupervisorServer struct {
-	DB     *database.DBClient // for mariadb
-	Auth   *auth.Client       // for firebase auth
-	Id     *snowflake.Node    // for id generate
-	Rb     *amqp.Connection   // for rabbitmq
-	Logger *zap.Logger        // for logging
+	DB     *db.DBClient     // for mariadb
+	Auth   *auth.Client     // for firebase auth
+	Id     *snowflake.Node  // for id generate
+	Rb     *amqp.Connection // for rabbitmq
+	Logger *zap.Logger      // for logging
 }
 
 func (s *SupervisorServer) CreateAccount(_ context.Context,
