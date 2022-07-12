@@ -8,7 +8,7 @@ import (
 	"github.com/bwmarrin/snowflake"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/submaline/services/database"
-	supervisorv1 "github.com/submaline/services/gen/protocol/supervisor/v1"
+	supervisorv1 "github.com/submaline/services/gen/supervisor/v1"
 	"github.com/submaline/services/logging"
 	"github.com/submaline/services/util"
 	"go.uber.org/zap"
@@ -40,7 +40,7 @@ func (s *SupervisorServer) CreateAccount(_ context.Context,
 
 	// firebaseのトークンにadminクレームが入っていれば、その情報がインターセプターで挿入されてるはず
 	if !util.ParseBool(req.Header().Get("X-Submaline-Admin")) {
-		err := ErrAdminOnly()
+		err := ErrAdminOnly
 		logging.LogError(
 			s.Logger,
 			SupervisorServiceName,

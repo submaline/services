@@ -2,7 +2,7 @@ package database
 
 import (
 	"database/sql"
-	typesv1 "github.com/submaline/services/gen/protocol/types/v1"
+	typesv1 "github.com/submaline/services/gen/types/v1"
 )
 
 // CreateAccount <Supervisor用> userIdとemailを使用してアカウント作成をします。
