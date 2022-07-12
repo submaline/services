@@ -8,7 +8,7 @@ import (
 	"github.com/bufbuild/connect-go"
 	"github.com/bwmarrin/snowflake"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"github.com/submaline/services/database"
+	"github.com/submaline/services/db"
 	"github.com/submaline/services/gen/supervisor/v1/supervisorv1connect"
 	"github.com/submaline/services/interceptor"
 	"github.com/submaline/services/server"
@@ -35,20 +35,20 @@ func main() {
 	}
 
 	// databaseの準備
-	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
+	_db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true",
 		os.Getenv("MARIADB_USER"),
 		os.Getenv("MARIADB_PASSWORD"),
 		os.Getenv("DATABASE_HOST"),
 		os.Getenv("DATABASE_PORT"),
 		os.Getenv("MARIADB_DATABASE")))
 	if err != nil {
-		log.Fatalf("failed to setup db: %v", err)
+		log.Fatalf("failed to setup _db: %v", err)
 	}
-	defer db.Close()
-	db.SetConnMaxLifetime(time.Minute * 3)
-	db.SetMaxOpenConns(10)
-	db.SetMaxIdleConns(10)
-	dbClient := &database.DBClient{DB: db}
+	defer _db.Close()
+	_db.SetConnMaxLifetime(time.Minute * 3)
+	_db.SetMaxOpenConns(10)
+	_db.SetMaxIdleConns(10)
+	dbClient := &db.DBClient{DB: _db}
 
 	// id generatorの準備
 	node, err := snowflake.NewNode(1)
@@ -81,7 +81,7 @@ func main() {
 	// ハンドラの準備
 	mux := http.NewServeMux()
 	interceptors := connect.WithInterceptors(
-		interceptor.NewAuthInterceptor(authClient))
+		interceptor.NewAuthInterceptor(authClient, interceptor.AuthPolicy{}))
 	mux.Handle(supervisorv1connect.NewSupervisorServiceHandler(
 		supervisorServer,
 		interceptors,
