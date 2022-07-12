@@ -8,16 +8,36 @@ import (
 	"strings"
 )
 
+// AuthPolicy 明示的にfalseとしなければ全部trueです
+type AuthPolicy map[string]bool
+
 type authInterceptor struct {
 	authClient *auth.Client
+	policy     AuthPolicy
 }
 
-func NewAuthInterceptor(fbAuthClient *auth.Client) *authInterceptor {
-	return &authInterceptor{authClient: fbAuthClient}
+func NewAuthInterceptor(fbAuthClient *auth.Client, policy AuthPolicy) *authInterceptor {
+	return &authInterceptor{
+		authClient: fbAuthClient,
+		policy:     policy,
+	}
 }
 
 func (i *authInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
 	return connect.UnaryFunc(func(ctx context.Context, request connect.AnyRequest) (connect.AnyResponse, error) {
+		name := request.Spec().Procedure
+		//log.Println(name)  ex /talk.v1.TalkService/SendReadReceipt
+		needAuth, ok := i.policy[name]
+		// 明示的にいらないと書いてあれば、スキップする
+		if ok && !needAuth {
+			// 本来の処理
+			res, err := next(ctx, request)
+			if err != nil {
+				return nil, err
+			}
+			return res, nil
+		}
+		//log.Println(name)
 		// インターセプター（前処理）
 		// "Bearer e..."
 		idTokenRaw := request.Header().Get("Authorization")

@@ -48,6 +48,27 @@ type GenTokenResponse struct {
 	ExpiresIn    string `json:"expiresIn"`
 }
 
+type GenTokenError struct {
+	Error struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+		Errors  []struct {
+			Message string `json:"message"`
+			Domain  string `json:"domain"`
+			Reason  string `json:"reason"`
+		} `json:"errors"`
+		Status  string `json:"status"`
+		Details []struct {
+			Type     string `json:"@type"`
+			Reason   string `json:"reason"`
+			Domain   string `json:"domain"`
+			Metadata struct {
+				Service string `json:"service"`
+			} `json:"metadata"`
+		} `json:"details"`
+	} `json:"error"`
+}
+
 func GenerateToken(email string, password string) (*GenTokenResponse, error) {
 	url := fmt.Sprintf("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=%s",
 		os.Getenv("FIREBASE_WEB_API_KEY"))
@@ -77,6 +98,15 @@ func GenerateToken(email string, password string) (*GenTokenResponse, error) {
 	err = json.Unmarshal(body, &result)
 	if err != nil {
 		return nil, err
+	}
+
+	if result.Email == "" {
+		var errResp GenTokenError
+		err = json.Unmarshal(body, &errResp)
+		if err != nil {
+			return nil, err
+		}
+		return nil, fmt.Errorf("failed to login: %v", errResp.Error.Message)
 	}
 
 	return &result, err
