@@ -1,11 +1,23 @@
 package logging
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
 	"strconv"
 	"strings"
 )
 
+type DiscordProfile struct {
+	DisplayName string `json:"username"`
+	Icon        string `json:"avatar_url"`
+}
+
 type DiscordRichMessage struct {
+	DiscordProfile
 	Content string                    `json:"content"`
 	Embeds  []DiscordRichMessageEmbed `json:"embeds"`
 }
@@ -28,6 +40,7 @@ type DiscordRichMessageEmbedAuthor struct {
 }
 
 func GenerateDiscordRichMsg(
+	profile DiscordProfile,
 	msg string,
 	title string,
 	desc string,
@@ -41,7 +54,8 @@ func GenerateDiscordRichMsg(
 		colorI = 16777215
 	}
 	d := DiscordRichMessage{
-		Content: msg,
+		DiscordProfile: profile,
+		Content:        msg,
 		Embeds: []DiscordRichMessageEmbed{
 			{Title: title,
 				Description: desc,
@@ -59,4 +73,24 @@ func GenerateDiscordRichMsgField(name string, value string, inline bool) Discord
 		Value:  value,
 		Inline: inline,
 	}
+}
+
+func SendDiscordRichMessage(webhookUrl string, rich DiscordRichMessage) error {
+	j, err := json.Marshal(rich)
+	if err != nil {
+		return err
+	}
+	log.Println(string(j))
+	res, err := http.Post(webhookUrl, "application/json", bytes.NewBuffer(j))
+	defer res.Body.Close()
+
+	resBody, err := io.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+
+	if 204 != res.StatusCode {
+		return fmt.Errorf("failde to send message via discord: %v", string(resBody))
+	}
+	return nil
 }

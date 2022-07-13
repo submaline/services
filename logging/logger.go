@@ -15,3 +15,6 @@ package logging
 //		funcName,
 //		zap.String("message", message))
 //}
+
+func Err()  {}
+func Info() {}
