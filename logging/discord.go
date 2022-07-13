@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -87,7 +86,7 @@ func SendDiscordRichMessage(webhookUrl string, rich DiscordRichMessage) error {
 	if err != nil {
 		return err
 	}
-	log.Println(string(j))
+
 	res, err := http.Post(webhookUrl, "application/json", bytes.NewBuffer(j))
 	defer res.Body.Close()
 

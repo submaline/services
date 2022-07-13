@@ -8,7 +8,7 @@ import (
 func TestSendDiscordRichMessage(t *testing.T) {
 	url := os.Getenv("DISCORD_WEBHOOK_URL")
 
-	field1 := GenerateDiscordRichMsgField("key", "value", false)
+	//field1 := GenerateDiscordRichMsgField("key", "value", false)
 	msg := GenerateDiscordRichMsg(
 		DiscordProfile{
 			DisplayName: "Submaline",
@@ -18,12 +18,12 @@ func TestSendDiscordRichMessage(t *testing.T) {
 		"the title",
 		"this is test",
 		ColorWarn,
-		[]DiscordRichMessageEmbedField{field1},
+		nil,
 		"TestSendDiscordRichMessage",
 	)
 
 	if err := SendDiscordRichMessage(url, msg); err != nil {
-		t.Fatal(err)
+		t.Fatalf("failed to send msg: %v", err)
 	}
 
 }
