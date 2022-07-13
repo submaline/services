@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"github.com/bufbuild/connect-go"
 	"github.com/bwmarrin/snowflake"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/joho/godotenv"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/submaline/services/db"
 	"github.com/submaline/services/gen/supervisor/v1/supervisorv1connect"
@@ -22,6 +24,10 @@ import (
 )
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Fatalf("failed to load env: %v", err)
+	}
+
 	// firebaseの準備
 	app, err := firebase.NewApp(context.Background(), nil)
 	if err != nil {
