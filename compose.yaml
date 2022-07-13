@@ -1,4 +1,26 @@
 services:
+  https-portal:
+    image: steveltn/https-portal:1
+    ports:
+      - '80:80'
+      - '443:443'
+    links:
+      - auth
+      - operation
+      - supervisor
+      - talk
+      - user
+    restart: always
+    environment:
+      DOMAINS: "$AUTH_DOMAIN -> http://auth:$AUTH_SERVICE_PORT, $OP_DOMAIN -> http://operation:$OPERATION_SERVICE_PORT, $SUPERVISOR_DOMAIN -> http://supervisor:$SUPERVISOR_SERVICE_PORT, $TALK_DOMAIN -> http://talk:$TALK_SERVICE_PORT, $USER_DOMAIN -> http://user:$USER_SERVICE_PORT"
+#      STAGE: local
+      # STAGE: 'production' # Don't use production until staging works
+      # FORCE_RENEW: 'true'
+    volumes:
+      - https-portal-data:/var/lib/https-portal
+    networks:
+      - internal
+
   auth:
     build:
       context: ./
@@ -122,6 +144,9 @@ services:
       - $USER_SERVICE_PORT:$USER_SERVICE_PORT
     networks:
       - internal
+
+volumes:
+  https-portal-data:
 
 networks:
   internal:
