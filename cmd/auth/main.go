@@ -95,7 +95,7 @@ func main() {
 	//}
 	if err := http.ListenAndServeTLS(
 		addr,
-		fmt.Sprintf("/data/ssl_certs/%s/staging/domain.csr", os.Getenv("AUTH_DOMAIN")),
+		fmt.Sprintf("/data/ssl_certs/%s/staging/signed.crt", os.Getenv("AUTH_DOMAIN")),
 		fmt.Sprintf("/data/ssl_certs/%s/staging/domain.key", os.Getenv("AUTH_DOMAIN")),
 		h2c.NewHandler(mux, &http2.Server{}),
 	); err != nil {
