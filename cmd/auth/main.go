@@ -87,8 +87,16 @@ func main() {
 	addr := fmt.Sprintf("0.0.0.0:%v", os.Getenv("AUTH_SERVICE_PORT"))
 
 	// 起動
-	if err := http.ListenAndServe(
+	//if err := http.ListenAndServe(
+	//	addr,
+	//	h2c.NewHandler(mux, &http2.Server{}),
+	//); err != nil {
+	//	log.Fatal(err)
+	//}
+	if err := http.ListenAndServeTLS(
 		addr,
+		fmt.Sprintf("/data/ssl_certs/%s/staging/domain.csr", os.Getenv("AUTH_DOMAIN")),
+		fmt.Sprintf("/data/ssl_certs/%s/staging/domain.key", os.Getenv("AUTH_DOMAIN")),
 		h2c.NewHandler(mux, &http2.Server{}),
 	); err != nil {
 		log.Fatal(err)
