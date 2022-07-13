@@ -1,0 +1,127 @@
+services:
+  auth:
+    build:
+      context: ./
+      dockerfile: cmd/auth/Dockerfile
+    environment:
+      # (コンテナのみ)環境変数書き換えで.envのGOOGLE_APPLICATION_CREDENTIALSをコンテナに適したモノに上書き
+      - GOOGLE_APPLICATION_CREDENTIALS=/application/gac.json
+      # supervisorとの通信に必要, 同じnetworkで繋げるのでservicesの名前を指定する
+      - SUPERVISOR_SERVICE_HOST=supervisor
+    volumes:
+      # (ローカル->コンテナ)ローカルのパスが指定されたGOOGLE_APPLICATION_CREDENTIALSを含む.envをコンテナにコピー
+      - type: bind
+        source: ./.env
+        target: /application/.env
+        read_only: true
+      # (ローカル->コンテナ).envに記載されたローカルパスからgac.jsonをコンテナにバインド
+      - type: bind
+        source: $GOOGLE_APPLICATION_CREDENTIALS
+        target: /application/gac.json
+        read_only: true
+    ports:
+      - $AUTH_SERVICE_PORT:$AUTH_SERVICE_PORT
+    networks:
+      - internal
+
+  operation:
+    build:
+      context: ./
+      dockerfile: cmd/operation/Dockerfile
+    environment:
+      # (コンテナのみ)環境変数書き換えで.envのGOOGLE_APPLICATION_CREDENTIALSをコンテナに適したモノに上書き
+      - GOOGLE_APPLICATION_CREDENTIALS=/application/gac.json
+      # supervisorとの通信に必要, 同じnetworkで繋げるのでservicesの名前を指定する
+      - SUPERVISOR_SERVICE_HOST=supervisor
+    volumes:
+      # (ローカル->コンテナ)ローカルのパスが指定されたGOOGLE_APPLICATION_CREDENTIALSを含む.envをコンテナにコピー
+      - type: bind
+        source: ./.env
+        target: /application/.env
+        read_only: true
+      # (ローカル->コンテナ).envに記載されたローカルパスからgac.jsonをコンテナにバインド
+      - type: bind
+        source: $GOOGLE_APPLICATION_CREDENTIALS
+        target: /application/gac.json
+        read_only: true
+    ports:
+      - $OPERATION_SERVICE_PORT:$OPERATION_SERVICE_PORT
+    networks:
+      - internal
+
+  supervisor:
+    build:
+      context: ./
+      dockerfile: cmd/supervisor/Dockerfile
+    environment:
+      # (コンテナのみ)環境変数書き換えで.envのGOOGLE_APPLICATION_CREDENTIALSをコンテナに適したモノに上書き
+      - GOOGLE_APPLICATION_CREDENTIALS=/application/gac.json
+      # supervisorとの通信に必要, 同じnetworkで繋げるのでservicesの名前を指定する
+    volumes:
+      # (ローカル->コンテナ)ローカルのパスが指定されたGOOGLE_APPLICATION_CREDENTIALSを含む.envをコンテナにコピー
+      - type: bind
+        source: ./.env
+        target: /application/.env
+        read_only: true
+      # (ローカル->コンテナ).envに記載されたローカルパスからgac.jsonをコンテナにバインド
+      - type: bind
+        source: $GOOGLE_APPLICATION_CREDENTIALS
+        target: /application/gac.json
+        read_only: true
+    ports:
+      - $SUPERVISOR_SERVICE_PORT:$SUPERVISOR_SERVICE_PORT
+    networks:
+      - internal
+
+  talk:
+    build:
+      context: ./
+      dockerfile: cmd/talk/Dockerfile
+    environment:
+      # (コンテナのみ)環境変数書き換えで.envのGOOGLE_APPLICATION_CREDENTIALSをコンテナに適したモノに上書き
+      - GOOGLE_APPLICATION_CREDENTIALS=/application/gac.json
+      # supervisorとの通信に必要, 同じnetworkで繋げるのでservicesの名前を指定する
+      - SUPERVISOR_SERVICE_HOST=supervisor
+    volumes:
+      # (ローカル->コンテナ)ローカルのパスが指定されたGOOGLE_APPLICATION_CREDENTIALSを含む.envをコンテナにコピー
+      - type: bind
+        source: ./.env
+        target: /application/.env
+        read_only: true
+      # (ローカル->コンテナ).envに記載されたローカルパスからgac.jsonをコンテナにバインド
+      - type: bind
+        source: $GOOGLE_APPLICATION_CREDENTIALS
+        target: /application/gac.json
+        read_only: true
+    ports:
+      - $TALK_SERVICE_PORT:$TALK_SERVICE_PORT
+    networks:
+      - internal
+
+  user:
+    build:
+      context: ./
+      dockerfile: cmd/user/Dockerfile
+    environment:
+      # (コンテナのみ)環境変数書き換えで.envのGOOGLE_APPLICATION_CREDENTIALSをコンテナに適したモノに上書き
+      - GOOGLE_APPLICATION_CREDENTIALS=/application/gac.json
+      # supervisorとの通信に必要, 同じnetworkで繋げるのでservicesの名前を指定する
+      - SUPERVISOR_SERVICE_HOST=supervisor
+    volumes:
+      # (ローカル->コンテナ)ローカルのパスが指定されたGOOGLE_APPLICATION_CREDENTIALSを含む.envをコンテナにコピー
+      - type: bind
+        source: ./.env
+        target: /application/.env
+        read_only: true
+      # (ローカル->コンテナ).envに記載されたローカルパスからgac.jsonをコンテナにバインド
+      - type: bind
+        source: $GOOGLE_APPLICATION_CREDENTIALS
+        target: /application/gac.json
+        read_only: true
+    ports:
+      - $USER_SERVICE_PORT:$USER_SERVICE_PORT
+    networks:
+      - internal
+
+networks:
+  internal:
