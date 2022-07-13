@@ -8,7 +8,10 @@ import (
 	"github.com/submaline/services/db"
 	"github.com/submaline/services/gen/supervisor/v1/supervisorv1connect"
 	userv1 "github.com/submaline/services/gen/user/v1"
+	"github.com/submaline/services/logging"
 	"go.uber.org/zap"
+	"log"
+	"os"
 )
 
 type UserServer struct {
@@ -25,8 +28,18 @@ func (s *UserServer) GetAccount(_ context.Context,
 
 	account, err := s.DB.GetAccount(requesterUserId)
 	if err != nil {
-		// todo
-		//logging.LogError(s.Logger, UserServiceName, funcName, "failed to get account data", err)
+
+		// log
+		if e_ := logging.ErrD(
+			s.Logger,
+			req.Spec().Procedure,
+			err,
+			"データベースからアカウントを取得できませんでした",
+			nil,
+			os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+			log.Println(e_)
+		}
+
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
 
@@ -48,8 +61,18 @@ func (s *UserServer) GetProfile(_ context.Context,
 
 	prof, err := s.DB.GetProfile(req.Msg.UserId)
 	if err != nil {
-		// todo
-		//logging.LogError(s.Logger, UserServiceName, funcName, "", err)
+
+		// log
+		if e_ := logging.ErrD(
+			s.Logger,
+			req.Spec().Procedure,
+			err,
+			"データベースからプロフィールの取得に失敗しました",
+			nil,
+			os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+			log.Println(e_)
+		}
+
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
 
@@ -65,8 +88,18 @@ func (s *UserServer) UpdateProfile(_ context.Context,
 
 	prof, err := s.DB.UpdateProfile(requesterUserId, req.Msg)
 	if err != nil {
-		// todo
-		//logging.LogError(s.Logger, UserServiceName, funcName, "", err)
+
+		// log
+		if e_ := logging.ErrD(
+			s.Logger,
+			req.Spec().Procedure,
+			err,
+			"データベースでユーザープロフィールの更新に失敗しました",
+			nil,
+			os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+			log.Println(e_)
+		}
+
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
 

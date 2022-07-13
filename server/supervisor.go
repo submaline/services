@@ -9,8 +9,11 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/submaline/services/db"
 	supervisorv1 "github.com/submaline/services/gen/supervisor/v1"
+	"github.com/submaline/services/logging"
 	"github.com/submaline/services/util"
 	"go.uber.org/zap"
+	"log"
+	"os"
 	"time"
 )
 
@@ -34,12 +37,16 @@ func (s *SupervisorServer) CreateAccount(_ context.Context,
 	// firebaseのトークンにadminクレームが入っていれば、その情報がインターセプターで挿入されてるはず
 	if !util.ParseBool(req.Header().Get("X-Submaline-Admin")) {
 		err := ErrAdminOnly
-		//logging.LogError(
-		//	s.Logger,
-		//	SupervisorServiceName,
-		//	funcName,
-		//	"",
-		//	err)
+		// log
+		if e_ := logging.ErrD(
+			s.Logger,
+			req.Spec().Procedure,
+			err,
+			"管理者以外がアカウント作成を試みました",
+			nil,
+			os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+			log.Println(e_)
+		}
 
 		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
@@ -48,24 +55,30 @@ func (s *SupervisorServer) CreateAccount(_ context.Context,
 	user, err := s.Auth.GetUser(context.Background(), req.Msg.Account.UserId)
 	if err != nil {
 		if auth.IsUserNotFound(err) {
-			// todo
-			//logging.LogError(
-			//	s.Logger,
-			//	SupervisorServiceName,
-			//	funcName,
-			//	"ユーザーが存在しません",
-			//	err)
-
+			// log
+			if e_ := logging.ErrD(
+				s.Logger,
+				req.Spec().Procedure,
+				err,
+				"Firebaseに登録されていないユーザーのアカウントの作成はできません",
+				[]logging.DiscordRichMessageEmbedField{
+					logging.GenerateDiscordRichMsgField("作成しようとしたUser", req.Msg.Account.UserId, false),
+				},
+				os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+				log.Println(e_)
+			}
 			return nil, connect.NewError(connect.CodeNotFound, err)
 		}
-
-		// todo
-		//logging.LogError(
-		//	s.Logger,
-		//	SupervisorServiceName,
-		//	funcName,
-		//	"firebaseで不明なエラー",
-		//	err)
+		// log
+		if e_ := logging.ErrD(
+			s.Logger,
+			req.Spec().Procedure,
+			err,
+			ErrMsgFailedToGetUserDatFromFirebase,
+			nil,
+			os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+			log.Println(e_)
+		}
 
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
@@ -76,13 +89,16 @@ func (s *SupervisorServer) CreateAccount(_ context.Context,
 		// todo : already exists
 		// Error 1062: Duplicate entry
 
-		// todo
-		//logging.LogError(
-		//	s.Logger,
-		//	SupervisorServiceName,
-		//	funcName,
-		//	"データベースでエラー",
-		//	err)
+		// log
+		if e_ := logging.ErrD(
+			s.Logger,
+			req.Spec().Procedure,
+			err,
+			"アカウントを作成できませんでした",
+			nil,
+			os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+			log.Println(e_)
+		}
 
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
@@ -100,13 +116,15 @@ func (s *SupervisorServer) CreateProfile(_ context.Context,
 	if !util.ParseBool(req.Header().Get("X-Peg-Admin")) {
 		err := ErrAdminOnly
 
-		//logging.LogError(
-		//	s.Logger,
-		//	SupervisorServiceName,
-		//	funcName,
-		//	"",
-		//	err)
-		// todo
+		if e_ := logging.ErrD(
+			s.Logger,
+			req.Spec().Procedure,
+			err,
+			"管理者以外がプロフィール作成を試みました",
+			nil,
+			os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+			log.Println(e_)
+		}
 
 		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
@@ -116,24 +134,32 @@ func (s *SupervisorServer) CreateProfile(_ context.Context,
 	if err != nil {
 		if auth.IsUserNotFound(err) {
 
-			// todo
-			//logging.LogError(
-			//	s.Logger,
-			//	SupervisorServiceName,
-			//	funcName,
-			//	"ユーザー存在しない",
-			//	err)
+			// log
+			if e_ := logging.ErrD(
+				s.Logger,
+				req.Spec().Procedure,
+				err,
+				"Firebaseに登録されていないユーザーのプロフィールは作成できません",
+				[]logging.DiscordRichMessageEmbedField{
+					logging.GenerateDiscordRichMsgField("作成しようとしたUser", req.Msg.Profile.UserId, false),
+				},
+				os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+				log.Println(e_)
+			}
 
 			return nil, connect.NewError(connect.CodeNotFound, err)
 		}
 
-		// todo
-		//logging.LogError(
-		//	s.Logger,
-		//	SupervisorServiceName,
-		//	funcName,
-		//	"",
-		//	err)
+		// log
+		if e_ := logging.ErrD(
+			s.Logger,
+			req.Spec().Procedure,
+			err,
+			ErrMsgFailedToGetUserDatFromFirebase,
+			nil,
+			os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+			log.Println(e_)
+		}
 
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
@@ -143,13 +169,17 @@ func (s *SupervisorServer) CreateProfile(_ context.Context,
 	if err != nil {
 		// todo : already exists
 		// Error 1062: Duplicate entry
-		// todo
-		//logging.LogError(
-		//	s.Logger,
-		//	SupervisorServiceName,
-		//	funcName,
-		//	"",
-		//	err)
+
+		// log
+		if e_ := logging.ErrD(
+			s.Logger,
+			req.Spec().Procedure,
+			err,
+			"プロフィールの作成に失敗しました",
+			nil,
+			os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+			log.Println(e_)
+		}
 
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
@@ -166,25 +196,33 @@ func (s *SupervisorServer) RecordOperation(_ context.Context,
 	// 権限確認
 	if !util.ParseBool(req.Header().Get("X-Peg-Admin")) {
 		err := ErrAdminOnly
-		// todo
-		//logging.LogError(
-		//	s.Logger,
-		//	SupervisorServiceName,
-		//	funcName,
-		//	"",
-		//	err)
+
+		// log
+		if e_ := logging.ErrD(
+			s.Logger,
+			req.Spec().Procedure,
+			err,
+			"管理者以外がOperation記録を試みました",
+			nil,
+			os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+			log.Println(e_)
+		}
+
 		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
 
 	ch, err := s.Rb.Channel()
 	if err != nil {
-		// todo
-		//logging.LogError(
-		//	s.Logger,
-		//	SupervisorServiceName,
-		//	funcName,
-		//	"",
-		//	err)
+		// log
+		if e_ := logging.ErrD(
+			s.Logger,
+			req.Spec().Procedure,
+			err,
+			ErrMsgFailedToGetUserDatFromFirebase,
+			nil,
+			os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+			log.Println(e_)
+		}
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
 	defer ch.Close()
@@ -197,13 +235,18 @@ func (s *SupervisorServer) RecordOperation(_ context.Context,
 		// 時間強制書き換え
 		_, err := s.DB.CreateOperation(opId, op.Type, op.Source, op.Param1, op.Param2, op.Param3, time.Now())
 		if err != nil {
-			// todo
-			//logging.LogError(
-			//	s.Logger,
-			//	SupervisorServiceName,
-			//	funcName,
-			//	"",
-			//	err)
+			// log
+			if e_ := logging.ErrD(
+				s.Logger,
+				req.Spec().Procedure,
+				err,
+				"データベースにOperationを書き込めませんでした",
+				[]logging.DiscordRichMessageEmbedField{
+					logging.GenerateDiscordRichMsgField("opId", fmt.Sprintf("%v", opId), false),
+				},
+				os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+				log.Println(e_)
+			}
 			return nil, connect.NewError(connect.CodeUnknown, err)
 		}
 
@@ -214,13 +257,18 @@ func (s *SupervisorServer) RecordOperation(_ context.Context,
 		// 宛先の記録
 		err = s.DB.CreateOperationDestination(opId, op.Destination)
 		if err != nil {
-			// todo
-			//logging.LogError(
-			//	s.Logger,
-			//	SupervisorServiceName,
-			//	funcName,
-			//	"",
-			//	err)
+			// log
+			if e_ := logging.ErrD(
+				s.Logger,
+				req.Spec().Procedure,
+				err,
+				"Operationの宛先記録に失敗しました",
+				[]logging.DiscordRichMessageEmbedField{
+					logging.GenerateDiscordRichMsgField("opId", fmt.Sprintf("%v", opId), false),
+				},
+				os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+				log.Println(e_)
+			}
 			return nil, connect.NewError(connect.CodeUnknown, err)
 		}
 
@@ -234,13 +282,16 @@ func (s *SupervisorServer) RecordOperation(_ context.Context,
 				nil,
 			)
 			if err != nil {
-				// todo
-				//logging.LogError(
-				//	s.Logger,
-				//	SupervisorServiceName,
-				//	funcName,
-				//	"",
-				//	err)
+				// log
+				if e_ := logging.ErrD(
+					s.Logger,
+					req.Spec().Procedure,
+					err,
+					"RabbitMQ キューの宣言に失敗しました",
+					nil,
+					os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+					log.Println(e_)
+				}
 				return nil, connect.NewError(connect.CodeUnknown, err)
 			}
 
@@ -254,22 +305,30 @@ func (s *SupervisorServer) RecordOperation(_ context.Context,
 					Body:        []byte(fmt.Sprintf("%v", opId)),
 				})
 			if err != nil {
-				// todo
-				//logging.LogError(
-				//	s.Logger,
-				//	SupervisorServiceName,
-				//	funcName,
-				//	"",
-				//	err)
+				// log
+				if e_ := logging.ErrD(
+					s.Logger,
+					req.Spec().Procedure,
+					err,
+					"RabbitMQ メッセージの送信に失敗しました",
+					nil,
+					os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+					log.Println(e_)
+				}
 				return nil, connect.NewError(connect.CodeUnknown, err)
 			}
 
-			// todo
-			//logging.LogInfo(
-			//	s.Logger,
-			//	SupervisorServiceName,
-			//	funcName,
-			//	fmt.Sprintf("MQに%v宛のop: %vの到着をお知らせしました", dest, opId))
+			// log
+			if e_ := logging.InfoD(
+				s.Logger,
+				req.Spec().Procedure,
+				"Operationを正常に記録しました",
+				[]logging.DiscordRichMessageEmbedField{
+					logging.GenerateDiscordRichMsgField("opId", fmt.Sprintf("%v", opId), false),
+				},
+				os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+				log.Println(err)
+			}
 
 		}
 	}

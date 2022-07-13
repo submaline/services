@@ -10,6 +10,7 @@ import (
 	supervisorv1 "github.com/submaline/services/gen/supervisor/v1"
 	"github.com/submaline/services/gen/supervisor/v1/supervisorv1connect"
 	typesv1 "github.com/submaline/services/gen/types/v1"
+	"github.com/submaline/services/logging"
 	"github.com/submaline/services/util"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -31,14 +32,32 @@ func (s *AuthServer) LoginWithEmail(_ context.Context,
 
 	token, err := util.GenerateToken(req.Msg.Email, req.Msg.Password)
 	if err != nil {
-		//logging.LogError(s.Logger, AuthServiceName, funcName, "", err)
+		// todo : firebase invalid ...
+		// log
+		if e_ := logging.ErrD(
+			s.Logger,
+			req.Spec().Procedure,
+			err,
+			"",
+			nil,
+			os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+			log.Println(e_)
+		}
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
 
 	expiresIn, err := strconv.ParseInt(token.ExpiresIn, 10, 64)
 	if err != nil {
-		// todo
-		//logging.LogError(s.Logger, AuthServiceName, funcName, "failed to parse expiresIn", err)
+		// log
+		if e_ := logging.ErrD(
+			s.Logger,
+			req.Spec().Procedure,
+			err,
+			"トークンの使用期限解析に失敗しました",
+			nil,
+			os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+			log.Println(e_)
+		}
 	}
 
 	recordReq := connect.NewRequest(&supervisorv1.RecordOperationRequest{Operations: []*typesv1.Operation{
@@ -57,16 +76,30 @@ func (s *AuthServer) LoginWithEmail(_ context.Context,
 	// sv用のトークン生成
 	adminToken, err := util.GenerateToken(os.Getenv("SUBMALINE_ADMIN_FB_EMAIL"), os.Getenv("SUBMALINE_ADMIN_FB_PASSWORD"))
 	if err != nil {
-		// todo
-		//logging.LogError(s.Logger, TalkServiceName, funcName, "sv用のトークンの生成に失敗しました", err)
+		// log
+		if e_ := logging.ErrD(
+			s.Logger,
+			req.Spec().Procedure,
+			err,
+			"管理者トークンの発行に失敗しました",
+			nil,
+			os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+			log.Println(e_)
+		}
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
 	recordReq.Header().Set("Authorization", fmt.Sprintf("Bearer %s", adminToken.IdToken))
 	go func() {
 		_, err = (*s.SvClient).RecordOperation(context.Background(), recordReq)
 		if err != nil {
-			if err != nil {
-				log.Println(err)
+			if e_ := logging.ErrD(
+				s.Logger,
+				req.Spec().Procedure,
+				err,
+				"Operationの記録に失敗しました",
+				nil,
+				os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+				log.Println(e_)
 			}
 		}
 	}()
@@ -85,5 +118,6 @@ func (s *AuthServer) LoginWithEmail(_ context.Context,
 func (s *AuthServer) UpdatePassword(_ context.Context,
 	_ *connect.Request[authv1.UpdatePasswordRequest]) (
 	*connect.Response[authv1.UpdatePasswordResponse], error) {
+	// todo : implement
 	return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("unimplemented: UpdatePassword"))
 }

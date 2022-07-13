@@ -11,8 +11,10 @@ import (
 	supervisorv1 "github.com/submaline/services/gen/supervisor/v1"
 	"github.com/submaline/services/gen/supervisor/v1/supervisorv1connect"
 	typesv1 "github.com/submaline/services/gen/types/v1"
+	"github.com/submaline/services/logging"
 	"github.com/submaline/services/util"
 	"go.uber.org/zap"
+	"log"
 	"os"
 	"strconv"
 )
@@ -36,8 +38,16 @@ func (s *OperationServer) FetchOperations(_ context.Context,
 	// sv用のトークン生成
 	adminToken, err := util.GenerateToken(os.Getenv("SUBMALINE_ADMIN_FB_EMAIL"), os.Getenv("SUBMALINE_ADMIN_FB_PASSWORD"))
 	if err != nil {
-		// todo
-		//logging.LogError(s.Logger, OperationServiceName, funcName, "sv用のトークンの生成に失敗しました", err)
+		// log
+		if e_ := logging.ErrD(
+			s.Logger,
+			req.Spec().Procedure,
+			err,
+			"管理者トークンの生成に失敗しました",
+			nil,
+			os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+			log.Println(e_)
+		}
 		return connect.NewError(connect.CodeUnknown, err)
 	}
 
@@ -59,15 +69,31 @@ func (s *OperationServer) FetchOperations(_ context.Context,
 
 	_, err = (*s.SvClient).RecordOperation(context.Background(), recordReq)
 	if err != nil {
-		// todo
-		//logging.LogError(s.Logger, OperationServiceName, funcName, "SVにopの配信を依頼できませんでした。", err)
+		// log
+		if e_ := logging.ErrD(
+			s.Logger,
+			req.Spec().Procedure,
+			err,
+			"Operationの記録に失敗しました",
+			nil,
+			os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+			log.Println(e_)
+		}
 		return connect.NewError(connect.CodeUnknown, err)
 	}
 
 	ch, err := s.Rb.Channel()
 	if err != nil {
-		// todo
-		//logging.LogError(s.Logger, OperationServiceName, funcName, "チャンネル生成に失敗しました", err)
+		// log
+		if e_ := logging.ErrD(
+			s.Logger,
+			req.Spec().Procedure,
+			err,
+			"RabbitMQ チャンネル生成に失敗しました",
+			nil,
+			os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+			log.Println(e_)
+		}
 		return connect.NewError(connect.CodeUnknown, err)
 	}
 	defer ch.Close()
@@ -81,8 +107,16 @@ func (s *OperationServer) FetchOperations(_ context.Context,
 		nil,
 	)
 	if err != nil {
-		// todo
-		//logging.LogError(s.Logger, OperationServiceName, funcName, "キューの宣言に失敗しました", err)
+		// log
+		if e_ := logging.ErrD(
+			s.Logger,
+			req.Spec().Procedure,
+			err,
+			"RabbitMQ キュー宣言に失敗しました",
+			nil,
+			os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+			log.Println(e_)
+		}
 		return connect.NewError(connect.CodeUnknown, err)
 	}
 
@@ -96,23 +130,47 @@ func (s *OperationServer) FetchOperations(_ context.Context,
 		nil,
 	)
 	if err != nil {
-		// todo
-		//logging.LogError(s.Logger, OperationServiceName, funcName, "メッセージの消費に失敗しました", err)
+		// log
+		if e_ := logging.ErrD(
+			s.Logger,
+			req.Spec().Procedure,
+			err,
+			"RabbitMQ メッセージの購読に失敗しました",
+			nil,
+			os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+			log.Println(e_)
+		}
 		return connect.NewError(connect.CodeUnknown, err)
 	}
 
 	for msg := range messages {
 		opId, err := strconv.ParseInt(string(msg.Body), 10, 64)
 		if err != nil {
-			// todo
-			//logging.LogError(s.Logger, OperationServiceName, funcName, "opIdの変換に失敗しました", err)
+			// log
+			if e_ := logging.ErrD(
+				s.Logger,
+				req.Spec().Procedure,
+				err,
+				"Operation.idの変換に失敗しました",
+				nil,
+				os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+				log.Println(e_)
+			}
 			return connect.NewError(connect.CodeInternal, err)
 		}
 
 		op, err := s.DB.GetOperationWithOperationId(opId)
 		if err != nil {
-			// todo
-			//logging.LogError(s.Logger, OperationServiceName, funcName, "dbからoperationを取得できませんでした", err)
+			// log
+			if e_ := logging.ErrD(
+				s.Logger,
+				req.Spec().Procedure,
+				err,
+				"Operationのデータ取得に失敗しました",
+				nil,
+				os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+				log.Println(e_)
+			}
 			return connect.NewError(connect.CodeUnknown, err)
 		}
 
@@ -121,8 +179,16 @@ func (s *OperationServer) FetchOperations(_ context.Context,
 			op.Type == typesv1.OperationType_OPERATION_TYPE_SEND_MESSAGE_RECV {
 			m_, err := s.DB.GetMessageWithMessageId(op.Param1)
 			if err != nil {
-				// todo
-				//logging.LogError(s.Logger, OperationServiceName, funcName, "opIdに紐づいているmessageの取得に失敗しました", err)
+				// log
+				if e_ := logging.ErrD(
+					s.Logger,
+					req.Spec().Procedure,
+					err,
+					"Operationに付属するMessageの取得に失敗しました",
+					nil,
+					os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+					log.Println(e_)
+				}
 				return connect.NewError(connect.CodeUnknown, err)
 			}
 
@@ -134,15 +200,29 @@ func (s *OperationServer) FetchOperations(_ context.Context,
 			Message:   opMsg,
 		})
 		if err != nil {
-			// todo
-			//logging.LogError(s.Logger, OperationServiceName, funcName, "opの配信に失敗しました", err)
+			// log
+			if e_ := logging.ErrD(
+				s.Logger,
+				req.Spec().Procedure,
+				err,
+				"Operationの配信に失敗しました",
+				nil,
+				os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+				log.Println(e_)
+			}
 		}
-		// todo
-		//logging.LogInfo(
-		//	s.Logger,
-		//	OperationServiceName,
-		//	funcName,
-		//	fmt.Sprintf("%vにopId: %vを送信しました\ntype: %v\n", requesterUserId, opId, op.Type.String()))
+		// log
+		if e_ := logging.InfoD(
+			s.Logger,
+			req.Spec().Procedure,
+			"Operationを配信しました",
+			[]logging.DiscordRichMessageEmbedField{
+				logging.GenerateDiscordRichMsgField("opId", fmt.Sprintf("%v", op.Id), false),
+			},
+			os.Getenv("DISCORD_WEBHOOK_URL"),
+		); e_ != nil {
+			log.Println(e_)
+		}
 	}
 
 	return nil

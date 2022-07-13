@@ -12,6 +12,7 @@ import (
 	"github.com/submaline/services/gen/supervisor/v1/supervisorv1connect"
 	talkv1 "github.com/submaline/services/gen/talk/v1"
 	typesv1 "github.com/submaline/services/gen/types/v1"
+	"github.com/submaline/services/logging"
 	"github.com/submaline/services/util"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -21,11 +22,10 @@ import (
 )
 
 type TalkServer struct {
-	DB   *db.DBClient    // for mariadb
-	Auth *auth.Client    // for firebase auth
-	Id   *snowflake.Node // for id generate
-	//Rb     *amqp.Connection   // for rabbitmq
-	Logger *zap.Logger // for logging
+	DB     *db.DBClient    // for mariadb
+	Auth   *auth.Client    // for firebase auth
+	Id     *snowflake.Node // for id generate
+	Logger *zap.Logger     // for logging
 
 	SvClient *supervisorv1connect.SupervisorServiceClient
 }
@@ -49,6 +49,7 @@ func (s *TalkServer) SendMessage(_ context.Context,
 	case strings.Contains(msg.To, "gr|"):
 		// groupか?
 		//opDestination
+		// todo : impl
 		return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("group is not implemented"))
 	case strings.Contains(msg.To, "di|") && strings.Contains(msg.To, ".") && strings.Contains(msg.To, senderUserId):
 		// 余計な部分を一回排除
@@ -94,14 +95,36 @@ func (s *TalkServer) SendMessage(_ context.Context,
 	// 実際にdbに挿入したものを返してあげる
 	resMsg, err := s.DB.CreateMessage(msg)
 	if err != nil {
+		// log
+		if e_ := logging.ErrD(
+			s.Logger,
+			req.Spec().Procedure,
+			err,
+			"データベースにMessageを記録できませんでした",
+			[]logging.DiscordRichMessageEmbedField{
+				logging.GenerateDiscordRichMsgField("msgId", msgId, false),
+			},
+			os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+			log.Println(e_)
+		}
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
 
 	// sv用のトークン生成
 	adminToken, err := util.GenerateToken(os.Getenv("SUBMALINE_ADMIN_FB_EMAIL"), os.Getenv("SUBMALINE_ADMIN_FB_PASSWORD"))
 	if err != nil {
-		// todo
-		//logging.LogError(s.Logger, TalkServiceName, funcName, "sv用のトークンの生成に失敗しました", err)
+
+		// log
+		if e_ := logging.ErrD(
+			s.Logger,
+			req.Spec().Procedure,
+			err,
+			"管理者トークンの生成に失敗し増田",
+			nil,
+			os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+			log.Println(e_)
+		}
+
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
 
@@ -137,7 +160,16 @@ func (s *TalkServer) SendMessage(_ context.Context,
 			recordReq,
 		)
 		if err != nil {
-			log.Println(err)
+			// log
+			if e_ := logging.ErrD(
+				s.Logger,
+				req.Spec().Procedure,
+				err,
+				"Operationの記録に失敗しました",
+				nil,
+				os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+				log.Println(e_)
+			}
 		}
 	}()
 	// レスポンス作成
@@ -151,9 +183,6 @@ func (s *TalkServer) SendReadReceipt(_ context.Context,
 	*connect.Response[talkv1.SendReadReceiptResponse], error) {
 
 	err := fmt.Errorf("unimplemented: SendReadReceipt")
-
-	// todo
-	//logging.LogError(s.Logger, TalkServiceName, funcName, "", err)
 
 	return nil, connect.NewError(connect.CodeUnimplemented, err)
 }

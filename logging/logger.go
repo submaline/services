@@ -9,7 +9,7 @@ func Err(l *zap.Logger, source string, err error, msg string) {
 	)
 }
 
-func ErrD(l *zap.Logger, source string, err error, msg, url string) error {
+func ErrD(l *zap.Logger, source string, err error, msg string, fields []DiscordRichMessageEmbedField, url string) error {
 	Err(l, source, err, msg)
 
 	prof := DiscordProfile{
@@ -22,7 +22,7 @@ func ErrD(l *zap.Logger, source string, err error, msg, url string) error {
 		"ERR",
 		err.Error(),
 		ColorErr,
-		nil,
+		fields,
 		source,
 	)
 
@@ -39,7 +39,7 @@ func Info(l *zap.Logger, source, msg string) {
 	)
 }
 
-func InfoD(l *zap.Logger, source, msg, url string) error {
+func InfoD(l *zap.Logger, source string, msg string, fields []DiscordRichMessageEmbedField, url string) error {
 	Info(l, source, msg)
 	prof := DiscordProfile{
 		DisplayName: "Submaline/Log",
@@ -52,7 +52,7 @@ func InfoD(l *zap.Logger, source, msg, url string) error {
 		"INFO",
 		"",
 		ColorInfo,
-		nil,
+		fields,
 		source,
 	)
 
