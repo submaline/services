@@ -17,7 +17,8 @@ services:
       # STAGE: 'production' # Don't use production until staging works
       # FORCE_RENEW: 'true'
     volumes:
-      - https-portal-data:/var/lib/https-portal
+#      - https-portal-data:/var/lib/https-portal
+      - /data/ssl_certs:/var/lib/https-portal
     networks:
       - internal
 
@@ -145,8 +146,8 @@ services:
     networks:
       - internal
 
-volumes:
-  https-portal-data:
+#volumes:
+#  https-portal-data:
 
 networks:
   internal:
