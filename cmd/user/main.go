@@ -6,6 +6,7 @@ import (
 	firebase "firebase.google.com/go/v4"
 	"fmt"
 	"github.com/bufbuild/connect-go"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 	"github.com/submaline/services/db"
 	"github.com/submaline/services/gen/supervisor/v1/supervisorv1connect"
