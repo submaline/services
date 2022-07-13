@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	defaultDisplayName = ""
-	defaultIconPath    = ""
+	defaultDisplayName = "unknown"
+	defaultIconPath    = "d2f60d27-a8b1-4631-8cc8-4f3a24155599"
 )
 
 type SupervisorServer struct {
@@ -113,7 +113,7 @@ func (s *SupervisorServer) CreateProfile(_ context.Context,
 	*connect.Response[supervisorv1.CreateProfileResponse], error) {
 
 	// 権限確認
-	if !util.ParseBool(req.Header().Get("X-Peg-Admin")) {
+	if !util.ParseBool(req.Header().Get("X-Submaline-Admin")) {
 		err := ErrAdminOnly
 
 		if e_ := logging.ErrD(
@@ -194,7 +194,7 @@ func (s *SupervisorServer) RecordOperation(_ context.Context,
 	*connect.Response[supervisorv1.RecordOperationResponse], error) {
 
 	// 権限確認
-	if !util.ParseBool(req.Header().Get("X-Peg-Admin")) {
+	if !util.ParseBool(req.Header().Get("X-Submaline-Admin")) {
 		err := ErrAdminOnly
 
 		// log
@@ -325,6 +325,7 @@ func (s *SupervisorServer) RecordOperation(_ context.Context,
 				"Operationを正常に記録しました",
 				[]logging.DiscordRichMessageEmbedField{
 					logging.GenerateDiscordRichMsgField("opId", fmt.Sprintf("%v", opId), false),
+					logging.GenerateDiscordRichMsgField("opType", op.Type.String(), false),
 				},
 				os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
 				log.Println(err)
