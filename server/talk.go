@@ -119,7 +119,7 @@ func (s *TalkServer) SendMessage(_ context.Context,
 			s.Logger,
 			req.Spec().Procedure,
 			err,
-			"管理者トークンの生成に失敗し増田",
+			"管理者トークンの生成に失敗しました",
 			nil,
 			os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
 			log.Println(e_)
