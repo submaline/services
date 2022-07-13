@@ -5,13 +5,6 @@ import (
 	"testing"
 )
 
-const (
-	ColorWarn    = "#FFD60C" // yellow
-	ColorErr     = "#FF0C0C" // red
-	ColorSuccess = "#0CFF59" // green
-	ColorInfo    = "#0C9EFF" // blue
-)
-
 func TestSendDiscordRichMessage(t *testing.T) {
 	url := os.Getenv("DISCORD_WEBHOOK_URL")
 

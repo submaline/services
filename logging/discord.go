@@ -11,6 +11,13 @@ import (
 	"strings"
 )
 
+const (
+	ColorWarn    = "#FFD60C" // yellow
+	ColorErr     = "#FF0C0C" // red
+	ColorSuccess = "#0CFF59" // green
+	ColorInfo    = "#0C9EFF" // blue
+)
+
 type DiscordProfile struct {
 	DisplayName string `json:"username"`
 	Icon        string `json:"avatar_url"`
