@@ -75,7 +75,9 @@ func main() {
 
 	mux := http.NewServeMux()
 	interceptors := connect.WithInterceptors(
-		interceptor.NewAuthInterceptor(authClient, interceptor.AuthPolicy{}))
+		interceptor.NewAuthInterceptor(authClient, interceptor.AuthPolicy{}),
+		interceptor.NewLogInterceptor(logger),
+	)
 	mux.Handle(userv1connect.NewUserServiceHandler(
 		userServer,
 		interceptors,

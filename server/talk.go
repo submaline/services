@@ -21,16 +21,11 @@ import (
 	"strings"
 )
 
-var (
-	TalkServiceName = zap.String("serviceName", "Talk")
-)
-
 type TalkServer struct {
-	DB   *db.DBClient    // for mariadb
-	Auth *auth.Client    // for firebase auth
-	Id   *snowflake.Node // for id generate
-	//Rb     *amqp.Connection   // for rabbitmq
-	Logger *zap.Logger // for logging
+	DB     *db.DBClient    // for mariadb
+	Auth   *auth.Client    // for firebase auth
+	Id     *snowflake.Node // for id generate
+	Logger *zap.Logger     // for logging
 
 	SvClient *supervisorv1connect.SupervisorServiceClient
 }
@@ -38,8 +33,6 @@ type TalkServer struct {
 func (s *TalkServer) SendMessage(_ context.Context,
 	req *connect.Request[talkv1.SendMessageRequest]) (
 	*connect.Response[talkv1.SendMessageResponse], error) {
-	funcName := zap.String("funcName", "SendMessage")
-	logging.LogGrpcFuncCall(s.Logger, TalkServiceName, funcName)
 	senderUserId := req.Header().Get("X-Submaline-UserId")
 
 	msg := req.Msg.Message
@@ -56,6 +49,7 @@ func (s *TalkServer) SendMessage(_ context.Context,
 	case strings.Contains(msg.To, "gr|"):
 		// groupか?
 		//opDestination
+		// todo : impl
 		return nil, connect.NewError(connect.CodeUnimplemented, fmt.Errorf("group is not implemented"))
 	case strings.Contains(msg.To, "di|") && strings.Contains(msg.To, ".") && strings.Contains(msg.To, senderUserId):
 		// 余計な部分を一回排除
@@ -101,13 +95,36 @@ func (s *TalkServer) SendMessage(_ context.Context,
 	// 実際にdbに挿入したものを返してあげる
 	resMsg, err := s.DB.CreateMessage(msg)
 	if err != nil {
+		// log
+		if e_ := logging.ErrD(
+			s.Logger,
+			req.Spec().Procedure,
+			err,
+			"データベースにMessageを記録できませんでした",
+			[]logging.DiscordRichMessageEmbedField{
+				logging.GenerateDiscordRichMsgField("msgId", msgId, false),
+			},
+			os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+			log.Println(e_)
+		}
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
 
 	// sv用のトークン生成
 	adminToken, err := util.GenerateToken(os.Getenv("SUBMALINE_ADMIN_FB_EMAIL"), os.Getenv("SUBMALINE_ADMIN_FB_PASSWORD"))
 	if err != nil {
-		logging.LogError(s.Logger, TalkServiceName, funcName, "sv用のトークンの生成に失敗しました", err)
+
+		// log
+		if e_ := logging.ErrD(
+			s.Logger,
+			req.Spec().Procedure,
+			err,
+			"管理者トークンの生成に失敗し増田",
+			nil,
+			os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+			log.Println(e_)
+		}
+
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
 
@@ -143,25 +160,29 @@ func (s *TalkServer) SendMessage(_ context.Context,
 			recordReq,
 		)
 		if err != nil {
-			log.Println(err)
+			// log
+			if e_ := logging.ErrD(
+				s.Logger,
+				req.Spec().Procedure,
+				err,
+				"Operationの記録に失敗しました",
+				nil,
+				os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+				log.Println(e_)
+			}
 		}
 	}()
 	// レスポンス作成
 	res := connect.NewResponse(&talkv1.SendMessageResponse{Message: resMsg})
 
-	logging.LogGrpcFuncFinish(s.Logger, TalkServiceName, funcName)
 	return res, nil
 }
 
 func (s *TalkServer) SendReadReceipt(_ context.Context,
 	_ *connect.Request[talkv1.SendReadReceiptRequest]) (
 	*connect.Response[talkv1.SendReadReceiptResponse], error) {
-	funcName := zap.String("funcName", "SendReadReceipt")
-	logging.LogGrpcFuncCall(s.Logger, TalkServiceName, funcName)
 
 	err := fmt.Errorf("unimplemented: SendReadReceipt")
-
-	logging.LogError(s.Logger, TalkServiceName, funcName, "", err)
 
 	return nil, connect.NewError(connect.CodeUnimplemented, err)
 }

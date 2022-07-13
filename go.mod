@@ -6,6 +6,7 @@ require (
 	firebase.google.com/go/v4 v4.8.0
 	github.com/bufbuild/connect-go v0.1.1
 	github.com/bwmarrin/snowflake v0.3.0
+	github.com/go-sql-driver/mysql v1.6.0
 	github.com/joho/godotenv v1.4.0
 	github.com/rabbitmq/amqp091-go v1.3.4
 	github.com/rs/xid v1.4.0
@@ -20,7 +21,6 @@ require (
 	cloud.google.com/go/firestore v1.6.1 // indirect
 	cloud.google.com/go/iam v0.1.1 // indirect
 	cloud.google.com/go/storage v1.21.0 // indirect
-	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.8 // indirect

@@ -5,3 +5,7 @@ import (
 )
 
 var ErrAdminOnly = errors.New("admin only")
+
+const (
+	ErrMsgFailedToGetUserDatFromFirebase = "Firebaseからユーザーデータを取得できませんでした"
+)
