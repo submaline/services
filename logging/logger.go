@@ -9,18 +9,21 @@ func Err(l *zap.Logger, source string, err error, msg string) {
 	)
 }
 
-func ErrD(l *zap.Logger, source string, err error, msg string, fields []DiscordRichMessageEmbedField, url string) error {
-	Err(l, source, err, msg)
+func ErrD(l *zap.Logger, source string, err error, desc string, fields []DiscordRichMessageEmbedField, url string) error {
+	Err(l, source, err, desc)
 
 	prof := DiscordProfile{
 		DisplayName: "Submaline/Log",
 		Icon:        "https://cdn.x0y14.workers.dev/250x250/e2890cb5-03d7-4176-ad0e-2071dec045fb",
 	}
+
+	fields = append(fields, GenerateDiscordRichMsgField("detail", err.Error(), false))
+
 	rich := GenerateDiscordRichMsg(
 		prof,
-		msg,
+		"",
 		"ERR",
-		err.Error(),
+		desc,
 		ColorErr,
 		fields,
 		source,
@@ -39,8 +42,8 @@ func Info(l *zap.Logger, source, msg string) {
 	)
 }
 
-func InfoD(l *zap.Logger, source string, msg string, fields []DiscordRichMessageEmbedField, url string) error {
-	Info(l, source, msg)
+func InfoD(l *zap.Logger, source string, desc string, fields []DiscordRichMessageEmbedField, url string) error {
+	Info(l, source, desc)
 	prof := DiscordProfile{
 		DisplayName: "Submaline/Log",
 		Icon:        "https://cdn.x0y14.workers.dev/250x250/e2890cb5-03d7-4176-ad0e-2071dec045fb",
@@ -48,9 +51,9 @@ func InfoD(l *zap.Logger, source string, msg string, fields []DiscordRichMessage
 
 	rich := GenerateDiscordRichMsg(
 		prof,
-		msg,
-		"INFO",
 		"",
+		"INFO",
+		desc,
 		ColorInfo,
 		fields,
 		source,
