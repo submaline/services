@@ -76,7 +76,9 @@ func main() {
 
 	mux := http.NewServeMux()
 	interceptors := connect.WithInterceptors(
-		interceptor.NewAuthInterceptor(authClient, interceptor.AuthPolicy{"/auth.v1.AuthService/LoginWithEmail": false}))
+		interceptor.NewAuthInterceptor(authClient, interceptor.AuthPolicy{"/auth.v1.AuthService/LoginWithEmail": false}),
+		interceptor.NewLogInterceptor(logger),
+	)
 	mux.Handle(authv1connect.NewAuthServiceHandler(
 		authServer,
 		interceptors,

@@ -11,15 +11,10 @@ import (
 	supervisorv1 "github.com/submaline/services/gen/supervisor/v1"
 	"github.com/submaline/services/gen/supervisor/v1/supervisorv1connect"
 	typesv1 "github.com/submaline/services/gen/types/v1"
-	"github.com/submaline/services/logging"
 	"github.com/submaline/services/util"
 	"go.uber.org/zap"
 	"os"
 	"strconv"
-)
-
-var (
-	OperationServiceName = zap.String("service", "Operation")
 )
 
 type OperationServer struct {
@@ -35,14 +30,14 @@ type OperationServer struct {
 func (s *OperationServer) FetchOperations(_ context.Context,
 	req *connect.Request[operationv1.FetchOperationsRequest],
 	stream *connect.ServerStream[operationv1.FetchOperationsResponse]) error {
-	funcName := zap.String("func", "FetchOperations")
-	logging.LogGrpcFuncCall(s.Logger, OperationServiceName, funcName)
+	//funcName := zap.String("func", "FetchOperations")
 	requesterUserId := req.Header().Get("X-Submaline-UserId")
 
 	// sv用のトークン生成
 	adminToken, err := util.GenerateToken(os.Getenv("SUBMALINE_ADMIN_FB_EMAIL"), os.Getenv("SUBMALINE_ADMIN_FB_PASSWORD"))
 	if err != nil {
-		logging.LogError(s.Logger, OperationServiceName, funcName, "sv用のトークンの生成に失敗しました", err)
+		// todo
+		//logging.LogError(s.Logger, OperationServiceName, funcName, "sv用のトークンの生成に失敗しました", err)
 		return connect.NewError(connect.CodeUnknown, err)
 	}
 
@@ -64,13 +59,15 @@ func (s *OperationServer) FetchOperations(_ context.Context,
 
 	_, err = (*s.SvClient).RecordOperation(context.Background(), recordReq)
 	if err != nil {
-		logging.LogError(s.Logger, OperationServiceName, funcName, "SVにopの配信を依頼できませんでした。", err)
+		// todo
+		//logging.LogError(s.Logger, OperationServiceName, funcName, "SVにopの配信を依頼できませんでした。", err)
 		return connect.NewError(connect.CodeUnknown, err)
 	}
 
 	ch, err := s.Rb.Channel()
 	if err != nil {
-		logging.LogError(s.Logger, OperationServiceName, funcName, "チャンネル生成に失敗しました", err)
+		// todo
+		//logging.LogError(s.Logger, OperationServiceName, funcName, "チャンネル生成に失敗しました", err)
 		return connect.NewError(connect.CodeUnknown, err)
 	}
 	defer ch.Close()
@@ -84,7 +81,8 @@ func (s *OperationServer) FetchOperations(_ context.Context,
 		nil,
 	)
 	if err != nil {
-		logging.LogError(s.Logger, OperationServiceName, funcName, "キューの宣言に失敗しました", err)
+		// todo
+		//logging.LogError(s.Logger, OperationServiceName, funcName, "キューの宣言に失敗しました", err)
 		return connect.NewError(connect.CodeUnknown, err)
 	}
 
@@ -98,20 +96,23 @@ func (s *OperationServer) FetchOperations(_ context.Context,
 		nil,
 	)
 	if err != nil {
-		logging.LogError(s.Logger, OperationServiceName, funcName, "メッセージの消費に失敗しました", err)
+		// todo
+		//logging.LogError(s.Logger, OperationServiceName, funcName, "メッセージの消費に失敗しました", err)
 		return connect.NewError(connect.CodeUnknown, err)
 	}
 
 	for msg := range messages {
 		opId, err := strconv.ParseInt(string(msg.Body), 10, 64)
 		if err != nil {
-			logging.LogError(s.Logger, OperationServiceName, funcName, "opIdの変換に失敗しました", err)
+			// todo
+			//logging.LogError(s.Logger, OperationServiceName, funcName, "opIdの変換に失敗しました", err)
 			return connect.NewError(connect.CodeInternal, err)
 		}
 
 		op, err := s.DB.GetOperationWithOperationId(opId)
 		if err != nil {
-			logging.LogError(s.Logger, OperationServiceName, funcName, "dbからoperationを取得できませんでした", err)
+			// todo
+			//logging.LogError(s.Logger, OperationServiceName, funcName, "dbからoperationを取得できませんでした", err)
 			return connect.NewError(connect.CodeUnknown, err)
 		}
 
@@ -120,7 +121,8 @@ func (s *OperationServer) FetchOperations(_ context.Context,
 			op.Type == typesv1.OperationType_OPERATION_TYPE_SEND_MESSAGE_RECV {
 			m_, err := s.DB.GetMessageWithMessageId(op.Param1)
 			if err != nil {
-				logging.LogError(s.Logger, OperationServiceName, funcName, "opIdに紐づいているmessageの取得に失敗しました", err)
+				// todo
+				//logging.LogError(s.Logger, OperationServiceName, funcName, "opIdに紐づいているmessageの取得に失敗しました", err)
 				return connect.NewError(connect.CodeUnknown, err)
 			}
 
@@ -132,15 +134,16 @@ func (s *OperationServer) FetchOperations(_ context.Context,
 			Message:   opMsg,
 		})
 		if err != nil {
-			logging.LogError(s.Logger, OperationServiceName, funcName, "opの配信に失敗しました", err)
+			// todo
+			//logging.LogError(s.Logger, OperationServiceName, funcName, "opの配信に失敗しました", err)
 		}
-		logging.LogInfo(
-			s.Logger,
-			OperationServiceName,
-			funcName,
-			fmt.Sprintf("%vにopId: %vを送信しました\ntype: %v\n", requesterUserId, opId, op.Type.String()))
+		// todo
+		//logging.LogInfo(
+		//	s.Logger,
+		//	OperationServiceName,
+		//	funcName,
+		//	fmt.Sprintf("%vにopId: %vを送信しました\ntype: %v\n", requesterUserId, opId, op.Type.String()))
 	}
 
-	logging.LogGrpcFuncFinish(s.Logger, OperationServiceName, funcName)
 	return nil
 }

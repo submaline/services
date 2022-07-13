@@ -12,17 +12,12 @@ import (
 	"github.com/submaline/services/gen/supervisor/v1/supervisorv1connect"
 	talkv1 "github.com/submaline/services/gen/talk/v1"
 	typesv1 "github.com/submaline/services/gen/types/v1"
-	"github.com/submaline/services/logging"
 	"github.com/submaline/services/util"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"log"
 	"os"
 	"strings"
-)
-
-var (
-	TalkServiceName = zap.String("serviceName", "Talk")
 )
 
 type TalkServer struct {
@@ -38,8 +33,6 @@ type TalkServer struct {
 func (s *TalkServer) SendMessage(_ context.Context,
 	req *connect.Request[talkv1.SendMessageRequest]) (
 	*connect.Response[talkv1.SendMessageResponse], error) {
-	funcName := zap.String("funcName", "SendMessage")
-	logging.LogGrpcFuncCall(s.Logger, TalkServiceName, funcName)
 	senderUserId := req.Header().Get("X-Submaline-UserId")
 
 	msg := req.Msg.Message
@@ -107,7 +100,8 @@ func (s *TalkServer) SendMessage(_ context.Context,
 	// sv用のトークン生成
 	adminToken, err := util.GenerateToken(os.Getenv("SUBMALINE_ADMIN_FB_EMAIL"), os.Getenv("SUBMALINE_ADMIN_FB_PASSWORD"))
 	if err != nil {
-		logging.LogError(s.Logger, TalkServiceName, funcName, "sv用のトークンの生成に失敗しました", err)
+		// todo
+		//logging.LogError(s.Logger, TalkServiceName, funcName, "sv用のトークンの生成に失敗しました", err)
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
 
@@ -149,19 +143,17 @@ func (s *TalkServer) SendMessage(_ context.Context,
 	// レスポンス作成
 	res := connect.NewResponse(&talkv1.SendMessageResponse{Message: resMsg})
 
-	logging.LogGrpcFuncFinish(s.Logger, TalkServiceName, funcName)
 	return res, nil
 }
 
 func (s *TalkServer) SendReadReceipt(_ context.Context,
 	_ *connect.Request[talkv1.SendReadReceiptRequest]) (
 	*connect.Response[talkv1.SendReadReceiptResponse], error) {
-	funcName := zap.String("funcName", "SendReadReceipt")
-	logging.LogGrpcFuncCall(s.Logger, TalkServiceName, funcName)
 
 	err := fmt.Errorf("unimplemented: SendReadReceipt")
 
-	logging.LogError(s.Logger, TalkServiceName, funcName, "", err)
+	// todo
+	//logging.LogError(s.Logger, TalkServiceName, funcName, "", err)
 
 	return nil, connect.NewError(connect.CodeUnimplemented, err)
 }

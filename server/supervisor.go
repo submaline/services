@@ -9,7 +9,6 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/submaline/services/db"
 	supervisorv1 "github.com/submaline/services/gen/supervisor/v1"
-	"github.com/submaline/services/logging"
 	"github.com/submaline/services/util"
 	"go.uber.org/zap"
 	"time"
@@ -18,10 +17,6 @@ import (
 const (
 	defaultDisplayName = ""
 	defaultIconPath    = ""
-)
-
-var (
-	SupervisorServiceName = zap.String("service", "Supervisor")
 )
 
 type SupervisorServer struct {
@@ -35,18 +30,16 @@ type SupervisorServer struct {
 func (s *SupervisorServer) CreateAccount(_ context.Context,
 	req *connect.Request[supervisorv1.CreateAccountRequest]) (
 	*connect.Response[supervisorv1.CreateAccountResponse], error) {
-	funcName := zap.String("func", "CreateAccount")
-	logging.LogGrpcFuncCall(s.Logger, SupervisorServiceName, funcName)
 
 	// firebaseのトークンにadminクレームが入っていれば、その情報がインターセプターで挿入されてるはず
 	if !util.ParseBool(req.Header().Get("X-Submaline-Admin")) {
 		err := ErrAdminOnly
-		logging.LogError(
-			s.Logger,
-			SupervisorServiceName,
-			funcName,
-			"",
-			err)
+		//logging.LogError(
+		//	s.Logger,
+		//	SupervisorServiceName,
+		//	funcName,
+		//	"",
+		//	err)
 
 		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
@@ -55,22 +48,24 @@ func (s *SupervisorServer) CreateAccount(_ context.Context,
 	user, err := s.Auth.GetUser(context.Background(), req.Msg.Account.UserId)
 	if err != nil {
 		if auth.IsUserNotFound(err) {
-			logging.LogError(
-				s.Logger,
-				SupervisorServiceName,
-				funcName,
-				"ユーザーが存在しません",
-				err)
+			// todo
+			//logging.LogError(
+			//	s.Logger,
+			//	SupervisorServiceName,
+			//	funcName,
+			//	"ユーザーが存在しません",
+			//	err)
 
 			return nil, connect.NewError(connect.CodeNotFound, err)
 		}
 
-		logging.LogError(
-			s.Logger,
-			SupervisorServiceName,
-			funcName,
-			"firebaseで不明なエラー",
-			err)
+		// todo
+		//logging.LogError(
+		//	s.Logger,
+		//	SupervisorServiceName,
+		//	funcName,
+		//	"firebaseで不明なエラー",
+		//	err)
 
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
@@ -81,19 +76,18 @@ func (s *SupervisorServer) CreateAccount(_ context.Context,
 		// todo : already exists
 		// Error 1062: Duplicate entry
 
-		logging.LogError(
-			s.Logger,
-			SupervisorServiceName,
-			funcName,
-			"データベースでエラー",
-			err)
+		// todo
+		//logging.LogError(
+		//	s.Logger,
+		//	SupervisorServiceName,
+		//	funcName,
+		//	"データベースでエラー",
+		//	err)
 
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
 
 	res := connect.NewResponse(&supervisorv1.CreateAccountResponse{Account: account})
-
-	logging.LogGrpcFuncFinish(s.Logger, SupervisorServiceName, funcName)
 
 	return res, nil
 }
@@ -101,22 +95,20 @@ func (s *SupervisorServer) CreateAccount(_ context.Context,
 func (s *SupervisorServer) CreateProfile(_ context.Context,
 	req *connect.Request[supervisorv1.CreateProfileRequest]) (
 	*connect.Response[supervisorv1.CreateProfileResponse], error) {
-	funcName := zap.String("func", "CreateProfile")
-
-	logging.LogGrpcFuncCall(s.Logger, SupervisorServiceName, funcName)
 
 	// 権限確認
 	if !util.ParseBool(req.Header().Get("X-Peg-Admin")) {
 		err := ErrAdminOnly
 
-		logging.LogError(
-			s.Logger,
-			SupervisorServiceName,
-			funcName,
-			"",
-			err)
+		//logging.LogError(
+		//	s.Logger,
+		//	SupervisorServiceName,
+		//	funcName,
+		//	"",
+		//	err)
+		// todo
 
-		return nil, connect.NewError(connect.CodePermissionDenied, fmt.Errorf("admin only"))
+		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
 
 	// firebaseにユーザーが存在するか
@@ -124,22 +116,24 @@ func (s *SupervisorServer) CreateProfile(_ context.Context,
 	if err != nil {
 		if auth.IsUserNotFound(err) {
 
-			logging.LogError(
-				s.Logger,
-				SupervisorServiceName,
-				funcName,
-				"ユーザー存在しない",
-				err)
+			// todo
+			//logging.LogError(
+			//	s.Logger,
+			//	SupervisorServiceName,
+			//	funcName,
+			//	"ユーザー存在しない",
+			//	err)
 
 			return nil, connect.NewError(connect.CodeNotFound, err)
 		}
 
-		logging.LogError(
-			s.Logger,
-			SupervisorServiceName,
-			funcName,
-			"",
-			err)
+		// todo
+		//logging.LogError(
+		//	s.Logger,
+		//	SupervisorServiceName,
+		//	funcName,
+		//	"",
+		//	err)
 
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
@@ -149,19 +143,18 @@ func (s *SupervisorServer) CreateProfile(_ context.Context,
 	if err != nil {
 		// todo : already exists
 		// Error 1062: Duplicate entry
-		logging.LogError(
-			s.Logger,
-			SupervisorServiceName,
-			funcName,
-			"",
-			err)
+		// todo
+		//logging.LogError(
+		//	s.Logger,
+		//	SupervisorServiceName,
+		//	funcName,
+		//	"",
+		//	err)
 
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
 
 	res := connect.NewResponse(&supervisorv1.CreateProfileResponse{Profile: profile})
-
-	logging.LogGrpcFuncFinish(s.Logger, SupervisorServiceName, funcName)
 
 	return res, nil
 }
@@ -169,29 +162,29 @@ func (s *SupervisorServer) CreateProfile(_ context.Context,
 func (s *SupervisorServer) RecordOperation(_ context.Context,
 	req *connect.Request[supervisorv1.RecordOperationRequest]) (
 	*connect.Response[supervisorv1.RecordOperationResponse], error) {
-	funcName := zap.String("func", "RecordOperation")
-	logging.LogGrpcFuncCall(s.Logger, SupervisorServiceName, funcName)
 
 	// 権限確認
 	if !util.ParseBool(req.Header().Get("X-Peg-Admin")) {
 		err := ErrAdminOnly
-		logging.LogError(
-			s.Logger,
-			SupervisorServiceName,
-			funcName,
-			"",
-			err)
-		return nil, connect.NewError(connect.CodePermissionDenied, fmt.Errorf("admin only"))
+		// todo
+		//logging.LogError(
+		//	s.Logger,
+		//	SupervisorServiceName,
+		//	funcName,
+		//	"",
+		//	err)
+		return nil, connect.NewError(connect.CodePermissionDenied, err)
 	}
 
 	ch, err := s.Rb.Channel()
 	if err != nil {
-		logging.LogError(
-			s.Logger,
-			SupervisorServiceName,
-			funcName,
-			"",
-			err)
+		// todo
+		//logging.LogError(
+		//	s.Logger,
+		//	SupervisorServiceName,
+		//	funcName,
+		//	"",
+		//	err)
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
 	defer ch.Close()
@@ -204,12 +197,13 @@ func (s *SupervisorServer) RecordOperation(_ context.Context,
 		// 時間強制書き換え
 		_, err := s.DB.CreateOperation(opId, op.Type, op.Source, op.Param1, op.Param2, op.Param3, time.Now())
 		if err != nil {
-			logging.LogError(
-				s.Logger,
-				SupervisorServiceName,
-				funcName,
-				"",
-				err)
+			// todo
+			//logging.LogError(
+			//	s.Logger,
+			//	SupervisorServiceName,
+			//	funcName,
+			//	"",
+			//	err)
 			return nil, connect.NewError(connect.CodeUnknown, err)
 		}
 
@@ -220,12 +214,13 @@ func (s *SupervisorServer) RecordOperation(_ context.Context,
 		// 宛先の記録
 		err = s.DB.CreateOperationDestination(opId, op.Destination)
 		if err != nil {
-			logging.LogError(
-				s.Logger,
-				SupervisorServiceName,
-				funcName,
-				"",
-				err)
+			// todo
+			//logging.LogError(
+			//	s.Logger,
+			//	SupervisorServiceName,
+			//	funcName,
+			//	"",
+			//	err)
 			return nil, connect.NewError(connect.CodeUnknown, err)
 		}
 
@@ -239,12 +234,13 @@ func (s *SupervisorServer) RecordOperation(_ context.Context,
 				nil,
 			)
 			if err != nil {
-				logging.LogError(
-					s.Logger,
-					SupervisorServiceName,
-					funcName,
-					"",
-					err)
+				// todo
+				//logging.LogError(
+				//	s.Logger,
+				//	SupervisorServiceName,
+				//	funcName,
+				//	"",
+				//	err)
 				return nil, connect.NewError(connect.CodeUnknown, err)
 			}
 
@@ -258,20 +254,22 @@ func (s *SupervisorServer) RecordOperation(_ context.Context,
 					Body:        []byte(fmt.Sprintf("%v", opId)),
 				})
 			if err != nil {
-				logging.LogError(
-					s.Logger,
-					SupervisorServiceName,
-					funcName,
-					"",
-					err)
+				// todo
+				//logging.LogError(
+				//	s.Logger,
+				//	SupervisorServiceName,
+				//	funcName,
+				//	"",
+				//	err)
 				return nil, connect.NewError(connect.CodeUnknown, err)
 			}
 
-			logging.LogInfo(
-				s.Logger,
-				SupervisorServiceName,
-				funcName,
-				fmt.Sprintf("MQに%v宛のop: %vの到着をお知らせしました", dest, opId))
+			// todo
+			//logging.LogInfo(
+			//	s.Logger,
+			//	SupervisorServiceName,
+			//	funcName,
+			//	fmt.Sprintf("MQに%v宛のop: %vの到着をお知らせしました", dest, opId))
 
 		}
 	}

@@ -10,17 +10,12 @@ import (
 	supervisorv1 "github.com/submaline/services/gen/supervisor/v1"
 	"github.com/submaline/services/gen/supervisor/v1/supervisorv1connect"
 	typesv1 "github.com/submaline/services/gen/types/v1"
-	"github.com/submaline/services/logging"
 	"github.com/submaline/services/util"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"log"
 	"os"
 	"strconv"
-)
-
-var (
-	AuthServiceName = zap.String("service", "Auth")
 )
 
 type AuthServer struct {
@@ -33,18 +28,17 @@ type AuthServer struct {
 func (s *AuthServer) LoginWithEmail(_ context.Context,
 	req *connect.Request[authv1.LoginWithEmailRequest]) (
 	*connect.Response[authv1.LoginWithEmailResponse], error) {
-	funcName := zap.String("func", "LoginWithEmail")
-	logging.LogGrpcFuncCall(s.Logger, AuthServiceName, funcName)
 
 	token, err := util.GenerateToken(req.Msg.Email, req.Msg.Password)
 	if err != nil {
-		logging.LogError(s.Logger, AuthServiceName, funcName, "", err)
+		//logging.LogError(s.Logger, AuthServiceName, funcName, "", err)
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
 
 	expiresIn, err := strconv.ParseInt(token.ExpiresIn, 10, 64)
 	if err != nil {
-		logging.LogError(s.Logger, AuthServiceName, funcName, "failed to parse expiresIn", err)
+		// todo
+		//logging.LogError(s.Logger, AuthServiceName, funcName, "failed to parse expiresIn", err)
 	}
 
 	recordReq := connect.NewRequest(&supervisorv1.RecordOperationRequest{Operations: []*typesv1.Operation{
@@ -63,7 +57,8 @@ func (s *AuthServer) LoginWithEmail(_ context.Context,
 	// sv用のトークン生成
 	adminToken, err := util.GenerateToken(os.Getenv("SUBMALINE_ADMIN_FB_EMAIL"), os.Getenv("SUBMALINE_ADMIN_FB_PASSWORD"))
 	if err != nil {
-		logging.LogError(s.Logger, TalkServiceName, funcName, "sv用のトークンの生成に失敗しました", err)
+		// todo
+		//logging.LogError(s.Logger, TalkServiceName, funcName, "sv用のトークンの生成に失敗しました", err)
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
 	recordReq.Header().Set("Authorization", fmt.Sprintf("Bearer %s", adminToken.IdToken))
@@ -84,7 +79,6 @@ func (s *AuthServer) LoginWithEmail(_ context.Context,
 		},
 	})
 
-	logging.LogGrpcFuncFinish(s.Logger, AuthServiceName, funcName)
 	return resp, nil
 }
 
