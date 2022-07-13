@@ -1,20 +1,64 @@
 package logging
 
-//func LogError(l *zap.Logger, serviceName zap.Field, funcName zap.Field, message string, err error) {
-//	l.Error("error",
-//		serviceName,
-//		funcName,
-//		zap.String("message", message),
-//		zap.Errors("detail", []error{err}),
-//	)
-//}
-//
-//func LogInfo(l *zap.Logger, serviceName zap.Field, funcName zap.Field, message string) {
-//	l.Info("notice",
-//		serviceName,
-//		funcName,
-//		zap.String("message", message))
-//}
+import "go.uber.org/zap"
 
-func Err()  {}
-func Info() {}
+func Err(l *zap.Logger, source string, err error, msg string) {
+	l.Error(msg,
+		zap.String("source", source),
+		zap.Error(err),
+	)
+}
+
+func ErrD(l *zap.Logger, source string, err error, msg, url string) error {
+	Err(l, source, err, msg)
+
+	prof := DiscordProfile{
+		DisplayName: "Submaline/Log",
+		Icon:        "https://cdn.x0y14.workers.dev/250x250/e2890cb5-03d7-4176-ad0e-2071dec045fb",
+	}
+	rich := GenerateDiscordRichMsg(
+		prof,
+		msg,
+		"ERR",
+		err.Error(),
+		ColorErr,
+		nil,
+		source,
+	)
+
+	if err_ := SendDiscordRichMessage(url, rich); err_ != nil {
+		return err_
+	}
+
+	return nil
+}
+
+func Info(l *zap.Logger, source, msg string) {
+	l.Info(msg,
+		zap.String("source", source),
+	)
+}
+
+func InfoD(l *zap.Logger, source, msg, url string) error {
+	Info(l, source, msg)
+	prof := DiscordProfile{
+		DisplayName: "Submaline/Log",
+		Icon:        "https://cdn.x0y14.workers.dev/250x250/e2890cb5-03d7-4176-ad0e-2071dec045fb",
+	}
+
+	rich := GenerateDiscordRichMsg(
+		prof,
+		msg,
+		"INFO",
+		"",
+		ColorInfo,
+		nil,
+		source,
+	)
+
+	if err_ := SendDiscordRichMessage(url, rich); err_ != nil {
+		return err_
+	}
+
+	return nil
+}
