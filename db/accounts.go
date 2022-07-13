@@ -47,5 +47,8 @@ func (db *DBClient) GetAccount(userId string) (*typesv1.Account, error) {
 
 func (db *DBClient) IsAccountExists(userId string) bool {
 	_, err := db.GetAccount(userId)
-	return err != nil
+	if err != nil {
+		return false
+	}
+	return true
 }
