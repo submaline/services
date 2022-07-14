@@ -55,8 +55,8 @@ func (s *OperationServer) FetchOperations(_ context.Context,
 		Operations: []*typesv1.Operation{
 			{
 				//Id:          0,
-				Type: typesv1.OperationType_OPERATION_TYPE_FETCH_OPERATIONS,
-				//Source:      requesterUserId,
+				Type:        typesv1.OperationType_OPERATION_TYPE_FETCH_OPERATIONS,
+				Source:      requesterUserId,
 				Destination: []string{requesterUserId},
 				//Param1:      "",
 				//Param2:      "",
