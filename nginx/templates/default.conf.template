@@ -1,0 +1,54 @@
+server {
+    server_name ${NGINX_AUTH_DOMAIN};
+    listen 80 http2;
+
+    access_log logs/access.log main;
+
+    location / {
+        grpc_pass grpc://auth:${NGINX_AUTH_PORT};
+    }
+}
+
+server {
+    server_name ${NGINX_OPERATION_DOMAIN};
+    listen 80 http2;
+
+    access_log logs/access.log main;
+
+    location / {
+        grpc_pass grpc://operation:${NGINX_OPERATION_PORT};
+    }
+}
+
+server {
+    server_name ${NGINX_SUPERVISOR_DOMAIN};
+    listen 80 http2;
+
+    access_log logs/access.log main;
+
+    location / {
+        grpc_pass grpc://supervisor:${NGINX_SUPERVISOR_PORT};
+    }
+}
+
+server {
+    server_name ${NGINX_TALK_DOMAIN};
+    listen 80 http2;
+
+    access_log logs/access.log main;
+
+    location / {
+        grpc_pass grpc://talk:${NGINX_TALK_PORT};
+    }
+}
+
+server {
+    server_name ${NGINX_USER_DOMAIN};
+    listen 80 http2;
+
+    access_log logs/access.log main;
+
+    location / {
+        grpc_pass grpc://auth:${NGINX_USER_PORT};
+    }
+}

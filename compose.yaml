@@ -1,24 +1,33 @@
 services:
-  https-portal:
-    image: steveltn/https-portal:1
-    ports:
-      - '80:80'
-      - '443:443'
-    links:
-      - auth
-      - operation
-      - supervisor
-      - talk
-      - user
-    restart: always
-    environment:
-      DOMAINS: "$AUTH_DOMAIN -> https://auth:$AUTH_SERVICE_PORT, $OP_DOMAIN -> https://operation:$OPERATION_SERVICE_PORT, $SUPERVISOR_DOMAIN -> https://supervisor:$SUPERVISOR_SERVICE_PORT, $TALK_DOMAIN -> https://talk:$TALK_SERVICE_PORT, $USER_DOMAIN -> https://user:$USER_SERVICE_PORT"
-#      STAGE: local
-      # STAGE: 'production' # Don't use production until staging works
-      # FORCE_RENEW: 'true'
+  nginx:
+    image: nginx:latest
+    container_name: nginx
     volumes:
-#      - https-portal-data:/var/lib/https-portal
-      - /data/ssl_certs:/var/lib/https-portal
+      - type: bind
+        source: ./nginx/templates
+        target: /etc/nginx/templates
+        read_only: false
+      - type: bind
+        source: ./nginx/logs
+        target: /etc/nginx/logs
+        read_only: false
+    environment:
+      - NGINX_AUTH_DOMAIN=$AUTH_SERVICE_DOMAIN
+      - NGINX_AUTH_PORT=$AUTH_SERVICE_PORT
+
+      - NGINX_OPERATION_DOMAIN=$OPERATION_SERVICE_DOMAIN
+      - NGINX_OPERATION_PORT=$OPERATION_SERVICE_PORT
+
+      - NGINX_SUPERVISOR_DOMAIN=$SUPERVISOR_SERVICE_DOMAIN
+      - NGINX_SUPERVISOR_PORT=$SUPERVISOR_SERVICE_PORT
+
+      - NGINX_TALK_DOMAIN=$TALK_SERVICE_DOMAIN
+      - NGINX_TALK_PORT=$TALK_SERVICE_PORT
+
+      - NGINX_USER_DOMAIN=$USER_SERVICE_DOMAIN
+      - NGINX_USER_PORT=$USER_SERVICE_PORT
+    ports:
+      - 80:80
     networks:
       - internal
 
@@ -42,13 +51,13 @@ services:
         source: $GOOGLE_APPLICATION_CREDENTIALS
         target: /application/gac.json
         read_only: true
-      # ssl
-      - type: bind
-        source: /data/ssl_certs
-        target: /data/ssl_certs
-        read_only: true
-    ports:
-      - $AUTH_SERVICE_PORT:$AUTH_SERVICE_PORT
+#      # ssl
+#      - type: bind
+#        source: ./data/ssl_certs
+#        target: /data/ssl_certs
+#        read_only: true
+#    ports:
+#      - $AUTH_SERVICE_PORT:$AUTH_SERVICE_PORT
     networks:
       - internal
 
@@ -74,7 +83,7 @@ services:
         read_only: true
       # ssl
       - type: bind
-        source: /data/ssl_certs
+        source: ./data/ssl_certs
         target: /data/ssl_certs
         read_only: true
     ports:
@@ -103,7 +112,7 @@ services:
         read_only: true
       # ssl
       - type: bind
-        source: /data/ssl_certs
+        source: ./data/ssl_certs
         target: /data/ssl_certs
         read_only: true
     ports:
@@ -133,7 +142,7 @@ services:
         read_only: true
       # ssl
       - type: bind
-        source: /data/ssl_certs
+        source: ./data/ssl_certs
         target: /data/ssl_certs
         read_only: true
     ports:
@@ -163,7 +172,7 @@ services:
         read_only: true
       # ssl
       - type: bind
-        source: /data/ssl_certs
+        source: ./data/ssl_certs
         target: /data/ssl_certs
         read_only: true
     ports:
