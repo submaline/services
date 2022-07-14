@@ -12,7 +12,7 @@ services:
       - user
     restart: always
     environment:
-      DOMAINS: "$AUTH_DOMAIN -> http://auth:$AUTH_SERVICE_PORT, $OP_DOMAIN -> http://operation:$OPERATION_SERVICE_PORT, $SUPERVISOR_DOMAIN -> http://supervisor:$SUPERVISOR_SERVICE_PORT, $TALK_DOMAIN -> http://talk:$TALK_SERVICE_PORT, $USER_DOMAIN -> http://user:$USER_SERVICE_PORT"
+      DOMAINS: "$AUTH_DOMAIN -> https://auth:$AUTH_SERVICE_PORT, $OP_DOMAIN -> https://operation:$OPERATION_SERVICE_PORT, $SUPERVISOR_DOMAIN -> https://supervisor:$SUPERVISOR_SERVICE_PORT, $TALK_DOMAIN -> https://talk:$TALK_SERVICE_PORT, $USER_DOMAIN -> https://user:$USER_SERVICE_PORT"
 #      STAGE: local
       # STAGE: 'production' # Don't use production until staging works
       # FORCE_RENEW: 'true'
