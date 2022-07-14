@@ -11,25 +11,51 @@ services:
         source: ./nginx/logs
         target: /etc/nginx/logs
         read_only: false
+      # for lets encrypt
+      - type: bind
+        source: ./html
+        target: /var/www/html
+        read_only: false
+      # for lets encrypt
+      - type: bind
+        # 汚さないように意図的にローカル
+        source: ./etc/letsencrypt/
+        target: /etc/letsencrypt
+        read_only: false
+      # for lets encrypt
+      - type: bind
+        # 汚さないように意図的にローカル
+        source: ./var/lib/letsencrypt
+        target: /var/lib/letsencrypt
+        read_only: false
     environment:
+        # auth
       - NGINX_AUTH_DOMAIN=$AUTH_SERVICE_DOMAIN
       - NGINX_AUTH_PORT=$AUTH_SERVICE_PORT
-
+        # op
       - NGINX_OPERATION_DOMAIN=$OPERATION_SERVICE_DOMAIN
       - NGINX_OPERATION_PORT=$OPERATION_SERVICE_PORT
-
+        # supervisor
       - NGINX_SUPERVISOR_DOMAIN=$SUPERVISOR_SERVICE_DOMAIN
       - NGINX_SUPERVISOR_PORT=$SUPERVISOR_SERVICE_PORT
-
+        # talk
       - NGINX_TALK_DOMAIN=$TALK_SERVICE_DOMAIN
       - NGINX_TALK_PORT=$TALK_SERVICE_PORT
-
+        # user
       - NGINX_USER_DOMAIN=$USER_SERVICE_DOMAIN
       - NGINX_USER_PORT=$USER_SERVICE_PORT
     ports:
       - 80:80
     networks:
       - internal
+
+  certbot:
+    image: certbot/certbot:latest
+    volumes:
+      - ./html:/var/www/html
+      - ./etc/letsencrypt/:/etc/letsencrypt/
+      - ./var/lib/letsencrypt:/var/lib/letsencrypt
+    command: ["--version"]
 
   auth:
     build:
