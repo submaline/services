@@ -17,6 +17,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type OperationServer struct {
@@ -211,7 +212,12 @@ func (s *OperationServer) FetchOperations(ctx context.Context,
 					req.Spec().Procedure,
 					err,
 					"Operationの配信に失敗しました",
-					nil,
+					[]logging.DiscordRichMessageEmbedField{
+						logging.GenerateDiscordRichMsgField("opId", fmt.Sprintf("%v", op.Id), false),
+						logging.GenerateDiscordRichMsgField("type", fmt.Sprintf("%v", op.Type.String()), false),
+						logging.GenerateDiscordRichMsgField("source", fmt.Sprintf("%v", op.Source), false),
+						logging.GenerateDiscordRichMsgField("dest", fmt.Sprintf("%v", strings.Join(op.Destination, ", ")), false),
+					},
 					os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
 					log.Println(e_)
 				}
