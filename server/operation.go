@@ -29,7 +29,7 @@ type OperationServer struct {
 	SvClient *supervisorv1connect.SupervisorServiceClient
 }
 
-func (s *OperationServer) FetchOperations(_ context.Context,
+func (s *OperationServer) FetchOperations(ctx context.Context,
 	req *connect.Request[operationv1.FetchOperationsRequest],
 	stream *connect.ServerStream[operationv1.FetchOperationsResponse]) error {
 	//funcName := zap.String("func", "FetchOperations")
@@ -143,48 +143,35 @@ func (s *OperationServer) FetchOperations(_ context.Context,
 		return connect.NewError(connect.CodeUnknown, err)
 	}
 
-	for msg := range messages {
-		opId, err := strconv.ParseInt(string(msg.Body), 10, 64)
-		if err != nil {
-			// log
-			if e_ := logging.ErrD(
-				s.Logger,
-				req.Spec().Procedure,
-				err,
-				"Operation.idの変換に失敗しました",
-				nil,
-				os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
-				log.Println(e_)
-			}
-			return connect.NewError(connect.CodeInternal, err)
-		}
+	select {
+	case <-ctx.Done():
+		return nil
+	default:
 
-		op, err := s.DB.GetOperationWithOperationId(opId)
-		if err != nil {
-			// log
-			if e_ := logging.ErrD(
-				s.Logger,
-				req.Spec().Procedure,
-				err,
-				"Operationのデータ取得に失敗しました",
-				nil,
-				os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
-				log.Println(e_)
-			}
-			return connect.NewError(connect.CodeUnknown, err)
-		}
-
-		var opMsg *typesv1.Message
-		if op.Type == typesv1.OperationType_OPERATION_TYPE_SEND_MESSAGE ||
-			op.Type == typesv1.OperationType_OPERATION_TYPE_SEND_MESSAGE_RECV {
-			m_, err := s.DB.GetMessageWithMessageId(op.Param1)
+		for msg := range messages {
+			opId, err := strconv.ParseInt(string(msg.Body), 10, 64)
 			if err != nil {
 				// log
 				if e_ := logging.ErrD(
 					s.Logger,
 					req.Spec().Procedure,
 					err,
-					"Operationに付属するMessageの取得に失敗しました",
+					"Operation.idの変換に失敗しました",
+					nil,
+					os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+					log.Println(e_)
+				}
+				return connect.NewError(connect.CodeInternal, err)
+			}
+
+			op, err := s.DB.GetOperationWithOperationId(opId)
+			if err != nil {
+				// log
+				if e_ := logging.ErrD(
+					s.Logger,
+					req.Spec().Procedure,
+					err,
+					"Operationのデータ取得に失敗しました",
 					nil,
 					os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
 					log.Println(e_)
@@ -192,36 +179,55 @@ func (s *OperationServer) FetchOperations(_ context.Context,
 				return connect.NewError(connect.CodeUnknown, err)
 			}
 
-			opMsg = m_
-		}
+			var opMsg *typesv1.Message
+			if op.Type == typesv1.OperationType_OPERATION_TYPE_SEND_MESSAGE ||
+				op.Type == typesv1.OperationType_OPERATION_TYPE_SEND_MESSAGE_RECV {
+				m_, err := s.DB.GetMessageWithMessageId(op.Param1)
+				if err != nil {
+					// log
+					if e_ := logging.ErrD(
+						s.Logger,
+						req.Spec().Procedure,
+						err,
+						"Operationに付属するMessageの取得に失敗しました",
+						nil,
+						os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+						log.Println(e_)
+					}
+					return connect.NewError(connect.CodeUnknown, err)
+				}
 
-		err = stream.Send(&operationv1.FetchOperationsResponse{
-			Operation: op,
-			Message:   opMsg,
-		})
-		if err != nil {
-			// log
-			if e_ := logging.ErrD(
-				s.Logger,
-				req.Spec().Procedure,
-				err,
-				"Operationの配信に失敗しました",
-				nil,
-				os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
-				log.Println(e_)
+				opMsg = m_
 			}
-		}
-		// log
-		if e_ := logging.InfoD(
-			s.Logger,
-			req.Spec().Procedure,
-			"Operationを配信しました",
-			[]logging.DiscordRichMessageEmbedField{
-				logging.GenerateDiscordRichMsgField("opId", fmt.Sprintf("%v", op.Id), false),
-			},
-			os.Getenv("DISCORD_WEBHOOK_URL"),
-		); e_ != nil {
-			log.Println(e_)
+
+			err = stream.Send(&operationv1.FetchOperationsResponse{
+				Operation: op,
+				Message:   opMsg,
+			})
+			if err != nil {
+				// log
+				if e_ := logging.ErrD(
+					s.Logger,
+					req.Spec().Procedure,
+					err,
+					"Operationの配信に失敗しました",
+					nil,
+					os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+					log.Println(e_)
+				}
+			} else { // log
+				if e_ := logging.InfoD(
+					s.Logger,
+					req.Spec().Procedure,
+					"Operationを配信しました",
+					[]logging.DiscordRichMessageEmbedField{
+						logging.GenerateDiscordRichMsgField("opId", fmt.Sprintf("%v", op.Id), false),
+					},
+					os.Getenv("DISCORD_WEBHOOK_URL"),
+				); e_ != nil {
+					log.Println(e_)
+				}
+			}
 		}
 	}
 
