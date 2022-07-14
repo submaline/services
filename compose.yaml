@@ -45,7 +45,7 @@ services:
       - NGINX_USER_DOMAIN=$USER_SERVICE_DOMAIN
       - NGINX_USER_PORT=$USER_SERVICE_PORT
     ports:
-      - 80:80
+      - 443:443
     networks:
       - internal
 
