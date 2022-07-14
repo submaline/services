@@ -50,7 +50,7 @@ services:
       - internal
 
   certbot:
-    image: certbot/certbot:latest
+    image: certbot/certbot:arm64v8-latest
     volumes:
       - ./html:/var/www/html
       - ./etc/letsencrypt/:/etc/letsencrypt/
