@@ -51,11 +51,6 @@ services:
         source: $GOOGLE_APPLICATION_CREDENTIALS
         target: /application/gac.json
         read_only: true
-#      # ssl
-#      - type: bind
-#        source: ./data/ssl_certs
-#        target: /data/ssl_certs
-#        read_only: true
 #    ports:
 #      - $AUTH_SERVICE_PORT:$AUTH_SERVICE_PORT
     networks:
@@ -81,11 +76,6 @@ services:
         source: $GOOGLE_APPLICATION_CREDENTIALS
         target: /application/gac.json
         read_only: true
-      # ssl
-      - type: bind
-        source: ./data/ssl_certs
-        target: /data/ssl_certs
-        read_only: true
     ports:
       - $OPERATION_SERVICE_PORT:$OPERATION_SERVICE_PORT
     networks:
@@ -110,13 +100,8 @@ services:
         source: $GOOGLE_APPLICATION_CREDENTIALS
         target: /application/gac.json
         read_only: true
-      # ssl
-      - type: bind
-        source: ./data/ssl_certs
-        target: /data/ssl_certs
-        read_only: true
-    ports:
-      - $SUPERVISOR_SERVICE_PORT:$SUPERVISOR_SERVICE_PORT
+#    ports:
+#      - $SUPERVISOR_SERVICE_PORT:$SUPERVISOR_SERVICE_PORT
     networks:
       - internal
 
@@ -140,13 +125,8 @@ services:
         source: $GOOGLE_APPLICATION_CREDENTIALS
         target: /application/gac.json
         read_only: true
-      # ssl
-      - type: bind
-        source: ./data/ssl_certs
-        target: /data/ssl_certs
-        read_only: true
-    ports:
-      - $TALK_SERVICE_PORT:$TALK_SERVICE_PORT
+#    ports:
+#      - $TALK_SERVICE_PORT:$TALK_SERVICE_PORT
     networks:
       - internal
 
@@ -170,13 +150,8 @@ services:
         source: $GOOGLE_APPLICATION_CREDENTIALS
         target: /application/gac.json
         read_only: true
-      # ssl
-      - type: bind
-        source: ./data/ssl_certs
-        target: /data/ssl_certs
-        read_only: true
-    ports:
-      - $USER_SERVICE_PORT:$USER_SERVICE_PORT
+#    ports:
+#      - $USER_SERVICE_PORT:$USER_SERVICE_PORT
     networks:
       - internal
 
