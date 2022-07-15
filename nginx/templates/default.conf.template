@@ -60,6 +60,6 @@ server {
     ssl_certificate_key /etc/letsencrypt/live/${NGINX_USER_DOMAIN}/privkey.pem;
 
     location / {
-        grpc_pass grpc://auth:${NGINX_USER_PORT};
+        grpc_pass grpc://user:${NGINX_USER_PORT};
     }
 }
