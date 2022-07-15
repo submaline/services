@@ -44,24 +44,24 @@ func Info(l *zap.Logger, source, msg string) {
 
 func InfoD(l *zap.Logger, source string, desc string, fields []DiscordRichMessageEmbedField, url string) error {
 	Info(l, source, desc)
-	prof := DiscordProfile{
-		DisplayName: "Submaline/Log",
-		Icon:        "https://cdn.x0y14.workers.dev/250x250/e2890cb5-03d7-4176-ad0e-2071dec045fb",
-	}
-
-	rich := GenerateDiscordRichMsg(
-		prof,
-		"",
-		"INFO",
-		desc,
-		ColorInfo,
-		fields,
-		source,
-	)
-
-	if err_ := SendDiscordRichMessage(url, rich); err_ != nil {
-		return err_
-	}
+	//prof := DiscordProfile{
+	//	DisplayName: "Submaline/Log",
+	//	Icon:        "https://cdn.x0y14.workers.dev/250x250/e2890cb5-03d7-4176-ad0e-2071dec045fb",
+	//}
+	//
+	//rich := GenerateDiscordRichMsg(
+	//	prof,
+	//	"",
+	//	"INFO",
+	//	desc,
+	//	ColorInfo,
+	//	fields,
+	//	source,
+	//)
+	//
+	//if err_ := SendDiscordRichMessage(url, rich); err_ != nil {
+	//	return err_
+	//}
 
 	return nil
 }
