@@ -111,7 +111,7 @@ func (s *TalkServer) SendMessage(_ context.Context,
 	}
 
 	// sv用のトークン生成
-	adminToken, err := util.GenerateToken(os.Getenv("SUBMALINE_ADMIN_FB_EMAIL"), os.Getenv("SUBMALINE_ADMIN_FB_PASSWORD"))
+	adminToken, err := util.GenerateToken(os.Getenv("SUBMALINE_ADMIN_FB_EMAIL"), os.Getenv("SUBMALINE_ADMIN_FB_PASSWORD"), false)
 	if err != nil {
 
 		// log

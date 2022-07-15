@@ -16,7 +16,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"log"
 	"os"
-	"strconv"
+	"time"
 )
 
 type AuthServer struct {
@@ -30,7 +30,7 @@ func (s *AuthServer) LoginWithEmail(_ context.Context,
 	req *connect.Request[authv1.LoginWithEmailRequest]) (
 	*connect.Response[authv1.LoginWithEmailResponse], error) {
 
-	token, err := util.GenerateToken(req.Msg.Email, req.Msg.Password)
+	token, err := util.GenerateToken(req.Msg.Email, req.Msg.Password, false)
 	if err != nil {
 		// todo : firebase invalid ...
 		// log
@@ -46,26 +46,14 @@ func (s *AuthServer) LoginWithEmail(_ context.Context,
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
 
-	expiresIn, err := strconv.ParseInt(token.ExpiresIn, 10, 64)
-	if err != nil {
-		// log
-		if e_ := logging.ErrD(
-			s.Logger,
-			req.Spec().Procedure,
-			err,
-			"トークンの使用期限解析に失敗しました",
-			nil,
-			os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
-			log.Println(e_)
-		}
-	}
+	expiresIn := token.ExpiresAt.Sub(time.Now()).Seconds()
 
 	recordReq := connect.NewRequest(&supervisorv1.RecordOperationRequest{Operations: []*typesv1.Operation{
 		{
 			Id:          0,
 			Type:        typesv1.OperationType_OPERATION_TYPE_LOGIN_WITH_EMAIL,
-			Source:      token.LocalId,
-			Destination: []string{token.LocalId},
+			Source:      token.UID,
+			Destination: []string{token.UID},
 			Param1:      "",
 			Param2:      "",
 			Param3:      "",
@@ -74,7 +62,7 @@ func (s *AuthServer) LoginWithEmail(_ context.Context,
 	}})
 
 	// sv用のトークン生成
-	adminToken, err := util.GenerateToken(os.Getenv("SUBMALINE_ADMIN_FB_EMAIL"), os.Getenv("SUBMALINE_ADMIN_FB_PASSWORD"))
+	adminToken, err := util.GenerateToken(os.Getenv("SUBMALINE_ADMIN_FB_EMAIL"), os.Getenv("SUBMALINE_ADMIN_FB_PASSWORD"), false)
 	if err != nil {
 		// log
 		if e_ := logging.ErrD(
@@ -107,8 +95,8 @@ func (s *AuthServer) LoginWithEmail(_ context.Context,
 	resp := connect.NewResponse(&authv1.LoginWithEmailResponse{
 		AuthToken: &typesv1.AuthToken{
 			Token:        token.IdToken,
-			ExpiresIn:    expiresIn,
-			RefreshToken: token.RefreshToken,
+			ExpiresIn:    int64(expiresIn),
+			RefreshToken: token.Refresh,
 		},
 	})
 

@@ -10,7 +10,25 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"time"
 )
+
+// 生成されたトークンを保存する
+var tokenCache map[string]TokenData
+
+// 初期化してあげる
+func init() {
+	tokenCache = map[string]TokenData{}
+}
+
+type TokenData struct {
+	IdToken   string
+	Refresh   string
+	ExpiresAt time.Time
+	ExpiresIn string // 互換
+	UID       string // 互換
+}
 
 // SetAdminClaim shを書くのがめんどくさかった。アドミン用のカスタムクレームをつけるスクリプト
 func SetAdminClaim(uid string) error {
@@ -31,24 +49,25 @@ func SetAdminClaim(uid string) error {
 	return err
 }
 
-type GenTokenRequest struct {
+type genTokenRequest struct {
 	Email             string `json:"email,omitempty"`
 	Password          string `json:"password,omitempty"`
 	ReturnSecureToken bool   `json:"return_secure_token,omitempty"`
 }
 
-type GenTokenResponse struct {
+type genTokenResponse struct {
 	Kind         string `json:"kind"`
 	LocalId      string `json:"localId"`
 	Email        string `json:"email"`
 	DisplayName  string `json:"displayName"`
-	IdToken      string `json:"idToken"`
+	IdToken      string `json:"IdToken"`
 	Registered   bool   `json:"registered"`
 	RefreshToken string `json:"refreshToken"`
-	ExpiresIn    string `json:"expiresIn"`
+	ExpiresIn    string `json:"ExpiresIn"`
 }
 
-type GenTokenError struct {
+// todo : error handle
+type genTokenError struct {
 	Error struct {
 		Code    int    `json:"code"`
 		Message string `json:"message"`
@@ -69,10 +88,33 @@ type GenTokenError struct {
 	} `json:"error"`
 }
 
-func GenerateToken(email string, password string) (*GenTokenResponse, error) {
+type genTokenWithRefreshRequest struct {
+	GrantType    string `json:"grant_type"`
+	RefreshToken string `json:"refresh_token"`
+}
+
+type genTokenWithRefreshResponse struct {
+	ExpiresIn    string `json:"expires_in"`
+	TokenType    string `json:"token_type"`
+	RefreshToken string `json:"refresh_token"`
+	IdToken      string `json:"id_token"`
+	UserId       string `json:"user_id"`
+	ProjectId    string `json:"project_id"`
+}
+
+// todo : error handle
+type genTokenWithRefreshError struct {
+	Error struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+		Status  string `json:"status"`
+	} `json:"error"`
+}
+
+func GenToken(email, password string) (*TokenData, error) {
 	url := fmt.Sprintf("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=%s",
 		os.Getenv("FIREBASE_WEB_API_KEY"))
-	bin := GenTokenRequest{
+	bin := genTokenRequest{
 		Email:             email,
 		Password:          password,
 		ReturnSecureToken: true,
@@ -94,20 +136,109 @@ func GenerateToken(email string, password string) (*GenTokenResponse, error) {
 		return nil, err
 	}
 
-	var result GenTokenResponse
+	var result genTokenResponse
 	err = json.Unmarshal(body, &result)
 	if err != nil {
 		return nil, err
 	}
 
-	if result.Email == "" {
-		var errResp GenTokenError
-		err = json.Unmarshal(body, &errResp)
-		if err != nil {
-			return nil, err
-		}
-		return nil, fmt.Errorf("failed to login: %v", errResp.Error.Message)
+	expiresIn, err := strconv.ParseInt(result.ExpiresIn, 10, 64)
+	if err != nil {
+		return nil, err
 	}
 
-	return &result, err
+	now := time.Now()
+	expiresAt := now.Add(time.Second * time.Duration(expiresIn))
+	return &TokenData{
+		IdToken:   result.IdToken,
+		Refresh:   result.RefreshToken,
+		ExpiresAt: expiresAt,
+		ExpiresIn: result.ExpiresIn,
+		UID:       result.LocalId,
+	}, nil
+}
+
+func GenTokenWithRefresh(refreshToken string) (*TokenData, error) {
+	url := fmt.Sprintf("https://securetoken.googleapis.com/v1/token?key=%v",
+		os.Getenv("FIREBASE_WEB_API_KEY"))
+
+	bin := genTokenWithRefreshRequest{
+		GrantType:    "refresh_token",
+		RefreshToken: refreshToken,
+	}
+	dataBin, err := json.Marshal(bin)
+	if err != nil {
+		return nil, err
+	}
+	res, err := http.Post(url, "application/json", bytes.NewBuffer(dataBin))
+	defer res.Body.Close()
+
+	if err != nil {
+		return nil, err
+	}
+
+	body, err := io.ReadAll(res.Body)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var result genTokenWithRefreshResponse
+	err = json.Unmarshal(body, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	expiresIn, err := strconv.ParseInt(result.ExpiresIn, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	now := time.Now()
+	expiresAt := now.Add(time.Second * time.Duration(expiresIn))
+
+	return &TokenData{
+		IdToken:   result.IdToken,
+		Refresh:   result.RefreshToken,
+		ExpiresAt: expiresAt,
+		ExpiresIn: result.ExpiresIn,
+		UID:       result.UserId,
+	}, nil
+}
+
+func GenerateToken(email string, password string, renew bool) (*TokenData, error) {
+	// Q.再生成を強制しますか?
+	if !renew {
+		// A.いいえ、強制しません
+		cache, ok := tokenCache[email]
+		// キャッシュが存在する
+		if ok {
+			// 現在の時刻がトークンの期限切れの前か?
+			if time.Now().Before(cache.ExpiresAt) {
+				// これは使えます
+				log.Printf("<GenerateToken> USE CACHE: %v\n", email)
+				return &cache, nil
+			} else {
+				// リフレッシュトークンを使用して再発行
+				tData, err := GenTokenWithRefresh(cache.IdToken)
+				if err != nil {
+					return nil, err
+				}
+				// 再生成成功
+				// キャッシュとして記憶してあげる
+				tokenCache[email] = *tData
+				log.Printf("<GenerateToken> REFRESH & CACHE: %v\n", email)
+				return tData, nil
+			}
+		}
+	}
+	// A.はい、強制します (& キャッシュが使えなかったので生成します)
+	tData, err := GenToken(email, password)
+	if err != nil {
+		return nil, err
+	}
+	// キャッシュとして記憶
+	tokenCache[email] = *tData
+
+	log.Printf("<GenerateToken> GENERATE & CACHE: %v\n", email)
+	return tData, nil
 }
