@@ -51,9 +51,9 @@ func main() {
 		log.Fatalf("failed to setup _db: %v", err)
 	}
 	defer _db.Close()
-	_db.SetConnMaxLifetime(time.Minute * 3)
-	_db.SetMaxOpenConns(10)
-	_db.SetMaxIdleConns(10)
+	_db.SetConnMaxLifetime(time.Second * 10)
+	_db.SetMaxOpenConns(30)
+	_db.SetMaxIdleConns(30)
 	dbClient := &db.DBClient{DB: _db}
 
 	// id generatorの準備
