@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	firebase "firebase.google.com/go/v4"
 	"fmt"
+	"github.com/pkg/errors"
 	"io"
 	"log"
 	"net/http"
@@ -144,7 +145,9 @@ func GenToken(email, password string) (*TokenData, error) {
 
 	expiresIn, err := strconv.ParseInt(result.ExpiresIn, 10, 64)
 	if err != nil {
-		return nil, err
+		var resultErr genTokenError
+		_ = json.Unmarshal(body, &resultErr)
+		return nil, errors.Wrap(err, resultErr.Error.Message)
 	}
 
 	now := time.Now()
@@ -191,6 +194,7 @@ func GenTokenWithRefresh(refreshToken string) (*TokenData, error) {
 
 	expiresIn, err := strconv.ParseInt(result.ExpiresIn, 10, 64)
 	if err != nil {
+
 		return nil, err
 	}
 	now := time.Now()

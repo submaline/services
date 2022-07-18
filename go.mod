@@ -8,6 +8,7 @@ require (
 	github.com/bwmarrin/snowflake v0.3.0
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/joho/godotenv v1.4.0
+	github.com/pkg/errors v0.8.1
 	github.com/rabbitmq/amqp091-go v1.3.4
 	github.com/rs/xid v1.4.0
 	go.uber.org/zap v1.21.0
