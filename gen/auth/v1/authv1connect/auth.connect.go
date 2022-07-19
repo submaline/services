@@ -29,6 +29,7 @@ const (
 type AuthServiceClient interface {
 	LoginWithEmail(context.Context, *connect_go.Request[v1.LoginWithEmailRequest]) (*connect_go.Response[v1.LoginWithEmailResponse], error)
 	UpdatePassword(context.Context, *connect_go.Request[v1.UpdatePasswordRequest]) (*connect_go.Response[v1.UpdatePasswordResponse], error)
+	TokenRefresh(context.Context, *connect_go.Request[v1.TokenRefreshRequest]) (*connect_go.Response[v1.TokenRefreshResponse], error)
 }
 
 // NewAuthServiceClient constructs a client for the auth.v1.AuthService service. By default, it uses
@@ -51,6 +52,11 @@ func NewAuthServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts
 			baseURL+"/auth.v1.AuthService/UpdatePassword",
 			opts...,
 		),
+		tokenRefresh: connect_go.NewClient[v1.TokenRefreshRequest, v1.TokenRefreshResponse](
+			httpClient,
+			baseURL+"/auth.v1.AuthService/TokenRefresh",
+			opts...,
+		),
 	}
 }
 
@@ -58,6 +64,7 @@ func NewAuthServiceClient(httpClient connect_go.HTTPClient, baseURL string, opts
 type authServiceClient struct {
 	loginWithEmail *connect_go.Client[v1.LoginWithEmailRequest, v1.LoginWithEmailResponse]
 	updatePassword *connect_go.Client[v1.UpdatePasswordRequest, v1.UpdatePasswordResponse]
+	tokenRefresh   *connect_go.Client[v1.TokenRefreshRequest, v1.TokenRefreshResponse]
 }
 
 // LoginWithEmail calls auth.v1.AuthService.LoginWithEmail.
@@ -70,10 +77,16 @@ func (c *authServiceClient) UpdatePassword(ctx context.Context, req *connect_go.
 	return c.updatePassword.CallUnary(ctx, req)
 }
 
+// TokenRefresh calls auth.v1.AuthService.TokenRefresh.
+func (c *authServiceClient) TokenRefresh(ctx context.Context, req *connect_go.Request[v1.TokenRefreshRequest]) (*connect_go.Response[v1.TokenRefreshResponse], error) {
+	return c.tokenRefresh.CallUnary(ctx, req)
+}
+
 // AuthServiceHandler is an implementation of the auth.v1.AuthService service.
 type AuthServiceHandler interface {
 	LoginWithEmail(context.Context, *connect_go.Request[v1.LoginWithEmailRequest]) (*connect_go.Response[v1.LoginWithEmailResponse], error)
 	UpdatePassword(context.Context, *connect_go.Request[v1.UpdatePasswordRequest]) (*connect_go.Response[v1.UpdatePasswordResponse], error)
+	TokenRefresh(context.Context, *connect_go.Request[v1.TokenRefreshRequest]) (*connect_go.Response[v1.TokenRefreshResponse], error)
 }
 
 // NewAuthServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -93,6 +106,11 @@ func NewAuthServiceHandler(svc AuthServiceHandler, opts ...connect_go.HandlerOpt
 		svc.UpdatePassword,
 		opts...,
 	))
+	mux.Handle("/auth.v1.AuthService/TokenRefresh", connect_go.NewUnaryHandler(
+		"/auth.v1.AuthService/TokenRefresh",
+		svc.TokenRefresh,
+		opts...,
+	))
 	return "/auth.v1.AuthService/", mux
 }
 
@@ -105,4 +123,8 @@ func (UnimplementedAuthServiceHandler) LoginWithEmail(context.Context, *connect_
 
 func (UnimplementedAuthServiceHandler) UpdatePassword(context.Context, *connect_go.Request[v1.UpdatePasswordRequest]) (*connect_go.Response[v1.UpdatePasswordResponse], error) {
 	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("auth.v1.AuthService.UpdatePassword is not implemented"))
+}
+
+func (UnimplementedAuthServiceHandler) TokenRefresh(context.Context, *connect_go.Request[v1.TokenRefreshRequest]) (*connect_go.Response[v1.TokenRefreshResponse], error) {
+	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("auth.v1.AuthService.TokenRefresh is not implemented"))
 }
