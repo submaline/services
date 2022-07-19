@@ -181,6 +181,9 @@ func GenTokenWithRefresh(refreshToken string) (*TokenData, error) {
 
 	body, err := io.ReadAll(res.Body)
 
+	// todo : remove
+	log.Println(string(body))
+
 	if err != nil {
 		return nil, err
 	}

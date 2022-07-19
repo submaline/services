@@ -5,6 +5,7 @@ import (
 	"firebase.google.com/go/v4/auth"
 	"fmt"
 	"github.com/bufbuild/connect-go"
+	"github.com/pkg/errors"
 	"github.com/submaline/services/db"
 	authv1 "github.com/submaline/services/gen/auth/v1"
 	supervisorv1 "github.com/submaline/services/gen/supervisor/v1"
@@ -24,6 +25,31 @@ type AuthServer struct {
 	Auth     *auth.Client
 	Logger   *zap.Logger
 	SvClient *supervisorv1connect.SupervisorServiceClient
+}
+
+func (s *AuthServer) TokenRefresh(_ context.Context, req *connect.Request[authv1.TokenRefreshRequest]) (*connect.Response[authv1.TokenRefreshResponse], error) {
+	tokenData, err := util.GenTokenWithRefresh(req.Msg.RefreshToken)
+	if err != nil {
+		err = errors.Wrap(err, "failed to generate token with refresh")
+		if e_ := logging.ErrD(
+			s.Logger,
+			req.Spec().Procedure,
+			err,
+			"",
+			nil,
+			os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
+			log.Println(e_)
+		}
+		return nil, connect.NewError(connect.CodeUnknown, err)
+	}
+
+	expiresIn := tokenData.ExpiresAt.Sub(time.Now()).Seconds()
+
+	return connect.NewResponse(&authv1.TokenRefreshResponse{AuthToken: &typesv1.AuthToken{
+		Token:        tokenData.IdToken,
+		ExpiresIn:    int64(expiresIn),
+		RefreshToken: tokenData.Refresh,
+	}}), nil
 }
 
 func (s *AuthServer) LoginWithEmail(_ context.Context,
