@@ -18,6 +18,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type OperationServer struct {
@@ -150,6 +151,7 @@ func (s *OperationServer) FetchOperations(ctx context.Context,
 			logging.Info(s.Logger, req.Spec().Procedure, "userとの接続が切れました。")
 			return nil
 		case msg := <-messages:
+			time.Sleep(time.Millisecond * 100)
 			opId, err := strconv.ParseInt(string(msg.Body), 10, 64)
 			if err != nil {
 				// log
