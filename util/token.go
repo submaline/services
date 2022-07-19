@@ -6,12 +6,15 @@ import (
 	"encoding/json"
 	firebase "firebase.google.com/go/v4"
 	"fmt"
+	"github.com/joho/godotenv"
 	"github.com/pkg/errors"
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -113,7 +116,7 @@ type genTokenWithRefreshError struct {
 }
 
 func GenToken(email, password string) (*TokenData, error) {
-	url := fmt.Sprintf("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=%s",
+	url_ := fmt.Sprintf("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=%s",
 		os.Getenv("FIREBASE_WEB_API_KEY"))
 	bin := genTokenRequest{
 		Email:             email,
@@ -124,7 +127,7 @@ func GenToken(email, password string) (*TokenData, error) {
 	if err != nil {
 		return nil, err
 	}
-	res, err := http.Post(url, "application/json", bytes.NewBuffer(dataBin))
+	res, err := http.Post(url_, "application/json", bytes.NewBuffer(dataBin))
 	defer res.Body.Close()
 
 	if err != nil {
@@ -162,18 +165,14 @@ func GenToken(email, password string) (*TokenData, error) {
 }
 
 func GenTokenWithRefresh(refreshToken string) (*TokenData, error) {
-	url := fmt.Sprintf("https://securetoken.googleapis.com/v1/token?key=%v",
+	url_ := fmt.Sprintf("https://securetoken.googleapis.com/v1/token?key=%s",
 		os.Getenv("FIREBASE_WEB_API_KEY"))
 
-	bin := genTokenWithRefreshRequest{
-		GrantType:    "refresh_token",
-		RefreshToken: refreshToken,
-	}
-	dataBin, err := json.Marshal(bin)
-	if err != nil {
-		return nil, err
-	}
-	res, err := http.Post(url, "application/json", bytes.NewBuffer(dataBin))
+	data := url.Values{}
+	data.Set("grant_type", "refresh_token")
+	data.Set("refresh_token", refreshToken)
+
+	res, err := http.Post(url_, "application/x-www-form-urlencoded", strings.NewReader(data.Encode()))
 	defer res.Body.Close()
 
 	if err != nil {
@@ -210,6 +209,12 @@ func GenTokenWithRefresh(refreshToken string) (*TokenData, error) {
 }
 
 func GenerateToken(email string, password string, renew bool) (*TokenData, error) {
+	if os.Getenv("FIREBASE_WEB_API_KEY") == "" {
+		if err := godotenv.Load(".env"); err != nil {
+			return nil, errors.Wrap(err, "so FIREBASE_WEB_API_KEY was empty, i tried load .env but failed")
+		}
+	}
+
 	// Q.再生成を強制しますか?
 	if !renew {
 		// A.いいえ、強制しません
