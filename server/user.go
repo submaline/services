@@ -2,10 +2,11 @@ package server
 
 import (
 	"context"
-	"firebase.google.com/go/v4/auth"
 	"fmt"
 	"github.com/bufbuild/connect-go"
 	"github.com/submaline/services/db"
+	authv1 "github.com/submaline/services/gen/auth/v1"
+	"github.com/submaline/services/gen/auth/v1/authv1connect"
 	supervisorv1 "github.com/submaline/services/gen/supervisor/v1"
 	"github.com/submaline/services/gen/supervisor/v1/supervisorv1connect"
 	typesv1 "github.com/submaline/services/gen/types/v1"
@@ -18,10 +19,11 @@ import (
 )
 
 type UserServer struct {
-	DB       *db.DBClient
-	Auth     *auth.Client
-	Logger   *zap.Logger
-	SvClient *supervisorv1connect.SupervisorServiceClient
+	DB     *db.DBClient
+	Logger *zap.Logger
+
+	AuthClient *authv1connect.AuthServiceClient
+	SvClient   *supervisorv1connect.SupervisorServiceClient
 }
 
 func (s *UserServer) GetAccount(_ context.Context,
@@ -131,9 +133,12 @@ func (s *UserServer) GetProfile(_ context.Context,
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
 
-	adminToken, err := util.GenerateToken(os.Getenv("SUBMALINE_ADMIN_FB_EMAIL"), os.Getenv("SUBMALINE_ADMIN_FB_PASSWORD"), false)
+	// sv用トークン
+	adminTokenResp, err := (*s.AuthClient).LoginWithEmail(context.Background(), connect.NewRequest(&authv1.LoginWithEmailRequest{
+		Email:    os.Getenv("SUBMALINE_ADMIN_FB_EMAIL"),
+		Password: os.Getenv("SUBMALINE_ADMIN_FB_PASSWORD"),
+	}))
 	if err != nil {
-
 		// log
 		if e_ := logging.ErrD(
 			s.Logger,
@@ -144,7 +149,6 @@ func (s *UserServer) GetProfile(_ context.Context,
 			os.Getenv("DISCORD_WEBHOOK_URL")); e_ != nil {
 			log.Println(e_)
 		}
-
 		return nil, connect.NewError(connect.CodeUnknown, err)
 	}
 
@@ -156,7 +160,7 @@ func (s *UserServer) GetProfile(_ context.Context,
 			Destination: []string{requesterUserId},
 		},
 	}})
-	recordReq.Header().Set("Authorization", fmt.Sprintf("Bearer %s", adminToken.IdToken))
+	recordReq.Header().Set("Authorization", fmt.Sprintf("Bearer %s", adminTokenResp.Msg.AuthToken.Token))
 	go func() {
 		_, err = (*s.SvClient).RecordOperation(
 			context.Background(),

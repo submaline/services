@@ -64,7 +64,7 @@ func main() {
 
 	supervisorClient := supervisorv1connect.NewSupervisorServiceClient(
 		http.DefaultClient,
-		fmt.Sprintf("http://%s:%s", os.Getenv("SUPERVISOR_SERVICE_HOST"), os.Getenv("SUPERVISOR_SERVICE_PORT")),
+		fmt.Sprintf("http://%s:%s", "supervisor", os.Getenv("SUPERVISOR_SERVICE_PORT")),
 	)
 
 	authServer := &server.AuthServer{

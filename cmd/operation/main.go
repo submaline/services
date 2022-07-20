@@ -10,6 +10,7 @@ import (
 	"github.com/joho/godotenv"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/submaline/services/db"
+	"github.com/submaline/services/gen/auth/v1/authv1connect"
 	"github.com/submaline/services/gen/operation/v1/operationv1connect"
 	"github.com/submaline/services/gen/supervisor/v1/supervisorv1connect"
 	"github.com/submaline/services/interceptor"
@@ -70,19 +71,24 @@ func main() {
 	}
 	defer logger.Sync()
 
+	authServiceClient := authv1connect.NewAuthServiceClient(
+		http.DefaultClient,
+		fmt.Sprintf("http://%s:%s", "auth", os.Getenv("AUTH_SERVICE_PORT")),
+	)
+
 	//
 	supervisorClient := supervisorv1connect.NewSupervisorServiceClient(
 		http.DefaultClient,
-		fmt.Sprintf("http://%s:%s", os.Getenv("SUPERVISOR_SERVICE_HOST"), os.Getenv("SUPERVISOR_SERVICE_PORT")),
+		fmt.Sprintf("http://%s:%s", "supervisor", os.Getenv("SUPERVISOR_SERVICE_PORT")),
 	)
 
 	// サービスの準備
 	operationServer := &server.OperationServer{
-		DB:       dbClient,
-		Auth:     authClient,
-		Rb:       rabbitConn,
-		Logger:   logger,
-		SvClient: &supervisorClient,
+		DB:         dbClient,
+		Rb:         rabbitConn,
+		Logger:     logger,
+		AuthClient: &authServiceClient,
+		SvClient:   &supervisorClient,
 	}
 
 	// ハンドラの準備

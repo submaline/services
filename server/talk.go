@@ -2,12 +2,13 @@ package server
 
 import (
 	"context"
-	"firebase.google.com/go/v4/auth"
 	"fmt"
 	"github.com/bufbuild/connect-go"
 	"github.com/bwmarrin/snowflake"
 	"github.com/rs/xid"
 	"github.com/submaline/services/db"
+	authv1 "github.com/submaline/services/gen/auth/v1"
+	"github.com/submaline/services/gen/auth/v1/authv1connect"
 	supervisorv1 "github.com/submaline/services/gen/supervisor/v1"
 	"github.com/submaline/services/gen/supervisor/v1/supervisorv1connect"
 	talkv1 "github.com/submaline/services/gen/talk/v1"
@@ -23,11 +24,11 @@ import (
 
 type TalkServer struct {
 	DB     *db.DBClient    // for mariadb
-	Auth   *auth.Client    // for firebase auth
 	Id     *snowflake.Node // for id generate
 	Logger *zap.Logger     // for logging
 
-	SvClient *supervisorv1connect.SupervisorServiceClient
+	AuthClient *authv1connect.AuthServiceClient
+	SvClient   *supervisorv1connect.SupervisorServiceClient
 }
 
 func (s *TalkServer) SendMessage(_ context.Context,
@@ -111,7 +112,10 @@ func (s *TalkServer) SendMessage(_ context.Context,
 	}
 
 	// sv用のトークン生成
-	adminToken, err := util.GenerateToken(os.Getenv("SUBMALINE_ADMIN_FB_EMAIL"), os.Getenv("SUBMALINE_ADMIN_FB_PASSWORD"), false)
+	adminTokenResp, err := (*s.AuthClient).LoginWithEmail(context.Background(), connect.NewRequest(&authv1.LoginWithEmailRequest{
+		Email:    os.Getenv("SUBMALINE_ADMIN_FB_EMAIL"),
+		Password: os.Getenv("SUBMALINE_ADMIN_FB_PASSWORD"),
+	}))
 	if err != nil {
 
 		// log
@@ -152,7 +156,7 @@ func (s *TalkServer) SendMessage(_ context.Context,
 	}})
 
 	// トークンをくっつけてあげる
-	recordReq.Header().Set("Authorization", fmt.Sprintf("Bearer %s", adminToken.IdToken))
+	recordReq.Header().Set("Authorization", fmt.Sprintf("Bearer %s", adminTokenResp.Msg.AuthToken.Token))
 	// リクエスト送信
 	go func() {
 		_, err = (*s.SvClient).RecordOperation(

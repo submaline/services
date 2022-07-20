@@ -9,6 +9,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 	"github.com/submaline/services/db"
+	"github.com/submaline/services/gen/auth/v1/authv1connect"
 	"github.com/submaline/services/gen/supervisor/v1/supervisorv1connect"
 	"github.com/submaline/services/gen/talk/v1/talkv1connect"
 	"github.com/submaline/services/interceptor"
@@ -62,18 +63,23 @@ func main() {
 	}
 	defer logger.Sync()
 
+	authServiceClient := authv1connect.NewAuthServiceClient(
+		http.DefaultClient,
+		fmt.Sprintf("http://%s:%s", "auth", os.Getenv("AUTH_SERVICE_PORT")),
+	)
+
 	//
 	supervisorClient := supervisorv1connect.NewSupervisorServiceClient(
 		http.DefaultClient,
-		fmt.Sprintf("http://%s:%s", os.Getenv("SUPERVISOR_SERVICE_HOST"), os.Getenv("SUPERVISOR_SERVICE_PORT")),
+		fmt.Sprintf("http://%s:%s", "supervisor", os.Getenv("SUPERVISOR_SERVICE_PORT")),
 	)
 
 	// サービスの準備
 	talkServer := &server.TalkServer{
-		DB:       dbClient,
-		Auth:     authClient,
-		Logger:   logger,
-		SvClient: &supervisorClient,
+		DB:         dbClient,
+		Logger:     logger,
+		AuthClient: &authServiceClient,
+		SvClient:   &supervisorClient,
 	}
 
 	// ハンドラの準備
