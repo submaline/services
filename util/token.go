@@ -231,7 +231,7 @@ func GenerateToken(email string, password string, renew bool) (*TokenData, error
 				return &cache, nil
 			} else {
 				// リフレッシュトークンを使用して再発行
-				tData, err := GenTokenWithRefresh(cache.IdToken)
+				tData, err := GenTokenWithRefresh(cache.Refresh)
 				if err != nil {
 					return nil, err
 				}
